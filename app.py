@@ -105,8 +105,9 @@ with st.sidebar:
                             # Create chunks
                             chunks = pdf_processor.create_chunks(text_content)
                             
-                            # Create vector store
-                            vector_store = VectorStore()
+                            # Create vector store with API embeddings
+                            api_key = os.getenv("OPENROUTER_API_KEY", "")
+                            vector_store = VectorStore(api_key=api_key)
                             vector_store.add_chunks(chunks)
                             
                             st.session_state.vector_store = vector_store
@@ -167,16 +168,16 @@ else:
         with st.chat_message("assistant"):
             with st.spinner("🤔 Thinking..."):
                 try:
-                    # Search for relevant chunks using LangChain
-                    relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.3)
+                    # Search for relevant chunks using API embeddings
+                    relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.7)
                     
                     # Debug information
                     total_chunks = len(st.session_state.vector_store.chunks) if st.session_state.vector_store.chunks else 0
-                    vectorstore_status = "Активен" if st.session_state.vector_store.vectorstore else "Не инициализирован"
+                    embeddings_count = len(st.session_state.vector_store.embeddings) if st.session_state.vector_store.embeddings else 0
                     
                     st.write(f"**Debug:** Всего фрагментов в документе: {total_chunks}")
-                    st.write(f"**Debug:** Статус векторного хранилища: {vectorstore_status}")
-                    st.write(f"**Debug:** Найдено {len(relevant_chunks)} релевантных фрагментов (LangChain + ChromaDB)")
+                    st.write(f"**Debug:** Создано эмбеддингов: {embeddings_count}")
+                    st.write(f"**Debug:** Найдено {len(relevant_chunks)} релевантных фрагментов (API embeddings)")
                     
                     if relevant_chunks:
                         st.write("**Найденные релевантные фрагменты:**")
@@ -189,16 +190,18 @@ else:
                         context = "\n\n".join([chunk["content"] for chunk in relevant_chunks])
                         st.write(f"**Debug:** Используется {len(relevant_chunks)} релевантных фрагментов")
                     else:
-                        # If no relevant chunks found, use top chunks without threshold
-                        st.write("**Debug:** Релевантные фрагменты не найдены, используем топ-3 по схожести")
-                        fallback_chunks = st.session_state.vector_store.search(prompt, k=3, score_threshold=0.0)
+                        # If no relevant chunks found, use lower threshold
+                        st.write("**Debug:** Снижаем порог поиска для нахождения похожих фрагментов")
+                        fallback_chunks = st.session_state.vector_store.search(prompt, k=3, score_threshold=0.5)
                         if fallback_chunks:
                             context = "\n\n".join([chunk["content"] for chunk in fallback_chunks])
                             for i, chunk in enumerate(fallback_chunks[:2]):
                                 st.write(f"**Запасной фрагмент {i+1}** (Score: {chunk.get('score', 0):.3f}):")
                                 st.write(f"```\n{chunk['content'][:300]}...\n```")
                         else:
-                            context = "Не удалось найти релевантные фрагменты в документе."
+                            # Final fallback to top chunks
+                            context = "\n\n".join([chunk["content"] for chunk in st.session_state.vector_store.chunks[:3]])
+                            st.write("**Debug:** Используем первые фрагменты документа")
                     
                     # Show context length
                     st.write(f"**Debug:** Размер контекста для модели: {len(context)} символов")
