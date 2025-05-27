@@ -89,17 +89,15 @@ with st.sidebar:
     # Model selection
     st.header("🤖 LLM Model")
     model_options = {
-        "GPT-4o 🖼️": "openai/gpt-4o",
-        "GPT-4o Mini 🖼️": "openai/gpt-4o-mini", 
-        "GPT-4 Turbo 🖼️": "openai/gpt-4-turbo",
+        "GPT-4o": "openai/gpt-4o",
+        "GPT-4o Mini": "openai/gpt-4o-mini", 
+        "GPT-4 Turbo": "openai/gpt-4-turbo",
         "GPT-3.5 Turbo": "openai/gpt-3.5-turbo",
-        "Claude 3.5 Sonnet 🖼️": "anthropic/claude-3.5-sonnet-20241022",
-        "Claude 3 Opus 🖼️": "anthropic/claude-3-opus-20240229",
-        "Claude 3 Haiku 🖼️": "anthropic/claude-3-haiku-20240307",
-        "Gemini Pro 1.5 🖼️": "google/gemini-pro-1.5",
-        "Gemini Flash 1.5 🖼️": "google/gemini-flash-1.5",
-        "InternVL3 14B 🖼️": "opengvlab/internvl3-14b:free",
-        "Llama 3.2 90B Vision 🖼️": "meta-llama/llama-3.2-90b-vision-instruct",
+        "Claude 3.5 Sonnet": "anthropic/claude-3.5-sonnet-20241022",
+        "Claude 3 Opus": "anthropic/claude-3-opus-20240229",
+        "Claude 3 Haiku": "anthropic/claude-3-haiku-20240307",
+        "Gemini Pro 1.5": "google/gemini-pro-1.5",
+        "Gemini Flash 1.5": "google/gemini-flash-1.5",
         "Llama 3.1 405B": "meta-llama/llama-3.1-405b-instruct",
         "Llama 3.1 70B": "meta-llama/llama-3.1-70b-instruct",
         "Mixtral 8x7B": "mistralai/mixtral-8x7b-instruct",
@@ -110,14 +108,8 @@ with st.sidebar:
         "Select model:",
         options=list(model_options.keys()),
         index=0,
-        help="🖼️ Vision models can analyze images from PDFs"
+        help="Choose your preferred language model for chat"
     )
-    
-    # Show vision capability info
-    if "🖼️" in selected_model:
-        st.info("🖼️ Эта модель может анализировать изображения из PDF")
-    else:
-        st.warning("⚠️ Эта модель работает только с текстом")
     
     st.session_state.selected_model = model_options[selected_model]
     
@@ -390,17 +382,6 @@ else:
                             # Combine contexts
                             context = "\n\n".join([chunk['content'] for chunk in relevant_chunks])
                             
-                            # Prepare images for vision models
-                            images_data = None
-                            if "🖼️" in st.session_state.get('selected_model', '') and st.session_state.get('document_images'):
-                                images_data = [img['data'] for img in st.session_state.document_images[:3]]  # Send first 3 images
-                                st.info(f"🖼️ Vision model detected! Sending {len(images_data)} images from PDF")
-                                if st.session_state.get('debug_mode', False):
-                                    st.info(f"📸 Images available: {len(st.session_state.document_images)}")
-                                    st.info(f"🤖 Selected model: {st.session_state.selected_model}")
-                            elif "🖼️" in st.session_state.get('selected_model', ''):
-                                st.warning("🖼️ Vision model selected but no images found in PDF")
-                            
                             # Get response from OpenRouter
                             response = openrouter_client.get_response(
                                 messages=st.session_state.messages[:-1],  # Exclude current message
@@ -408,8 +389,7 @@ else:
                                 context=context,
                                 model=st.session_state.selected_model,
                                 max_tokens=1000,
-                                temperature=0.7,
-                                images=images_data
+                                temperature=0.7
                             )
                             
                             st.markdown(response)
