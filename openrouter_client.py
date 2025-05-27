@@ -53,6 +53,7 @@ class OpenRouterClient:
             model: Model identifier
             max_tokens: Maximum tokens in response
             temperature: Response creativity (0.0 to 1.0)
+            images: Optional list of base64 encoded images for vision models
             
         Returns:
             Generated response text
