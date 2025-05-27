@@ -21,6 +21,7 @@ import base64
 from pdf_processor import PDFProcessor
 from vector_store import VectorStore
 from openrouter_client import OpenRouterClient
+from topic_extractor import TopicExtractor
 from utils import validate_pdf_file, format_chat_message
 
 # Page configuration
@@ -45,7 +46,13 @@ if "pdf_name" not in st.session_state:
 if "pdf_base64" not in st.session_state:
     st.session_state.pdf_base64 = ""
 if "selected_model" not in st.session_state:
-    st.session_state.selected_model = "openai/gpt-3.5-turbo"
+    st.session_state.selected_model = "openai/gpt-4o"
+if "document_topics" not in st.session_state:
+    st.session_state.document_topics = []
+if "document_images" not in st.session_state:
+    st.session_state.document_images = []
+if "document_summary" not in st.session_state:
+    st.session_state.document_summary = ""
 
 # Helper functions
 @st.cache_resource
@@ -64,6 +71,7 @@ def get_openrouter_client():
 
 pdf_processor = get_pdf_processor()
 openrouter_client = get_openrouter_client()
+topic_extractor = TopicExtractor(openrouter_client)
 
 # Sidebar for PDF upload and settings
 with st.sidebar:
@@ -210,6 +218,20 @@ with st.sidebar:
                             # Create chunks
                             chunks = pdf_processor.create_chunks(text_content)
                             
+                            # Extract images from PDF
+                            images = pdf_processor.extract_images(tmp_file_path)
+                            
+                            # Analyze images (basic description for now)
+                            images_description = ""
+                            if images:
+                                images_description = f"Документ содержит {len(images)} изображений"
+                            
+                            # Extract topics using LLM
+                            topics = topic_extractor.extract_topics_llm(text_content, images_description, st.session_state.selected_model)
+                            
+                            # Generate document summary
+                            summary = topic_extractor.generate_document_summary(text_content, topics)
+                            
                             # Create vector store with Course API
                             course_api_key = os.environ.get("COURSE_API_KEY")
                             if not course_api_key:
@@ -228,9 +250,18 @@ with st.sidebar:
                             st.session_state.pdf_content = text_content
                             st.session_state.pdf_name = uploaded_file.name
                             st.session_state.pdf_base64 = pdf_base64
+                            st.session_state.document_topics = topics
+                            st.session_state.document_images = images
+                            st.session_state.document_summary = summary
                             st.session_state.messages = []  # Clear previous chat
                             
-                            st.success(f"✅ Successfully processed {len(chunks)} text chunks using Course API")
+                            success_msg = f"✅ Successfully processed {len(chunks)} text chunks"
+                            if images:
+                                success_msg += f" and {len(images)} images"
+                            if topics:
+                                success_msg += f". Topics: {', '.join(topics[:3])}{'...' if len(topics) > 3 else ''}"
+                            
+                            st.success(success_msg)
                             st.rerun()
                         
                 except Exception as e:
@@ -259,6 +290,38 @@ else:
     
     with pdf_tab:
         st.markdown("### PDF Document")
+        
+        # Show document topics and summary
+        if st.session_state.get('document_topics'):
+            st.markdown("**🏷️ Тематические метки:**")
+            # Display topics as colored badges
+            topics_html = ""
+            for topic in st.session_state.document_topics:
+                topics_html += f'<span style="background-color: #e1f5fe; color: #01579b; padding: 2px 8px; border-radius: 12px; margin: 2px; display: inline-block; font-size: 0.85em;">{topic}</span>'
+            st.markdown(topics_html, unsafe_allow_html=True)
+            st.markdown("")
+        
+        # Show document summary
+        if st.session_state.get('document_summary'):
+            st.markdown("**📋 Краткое описание:**")
+            st.info(st.session_state.document_summary)
+        
+        # Show images info
+        if st.session_state.get('document_images'):
+            with st.expander(f"🖼️ Изображения в документе ({len(st.session_state.document_images)})", expanded=False):
+                for i, img in enumerate(st.session_state.document_images[:5]):  # Show first 5
+                    col1, col2 = st.columns([1, 3])
+                    with col1:
+                        try:
+                            # Display small thumbnail
+                            img_data = base64.b64decode(img['data'])
+                            st.image(img_data, width=100, caption=f"Страница {img['page']}")
+                        except:
+                            st.write(f"📄 Страница {img['page']}")
+                    with col2:
+                        st.write(f"**Размер:** {img['width']}×{img['height']} пикселей")
+                        st.write(f"**Размер файла:** {img['size_bytes']:,} байт")
+        
         if st.session_state.get('pdf_base64'):
             # Show PDF stats only in debug mode
             if st.session_state.get('debug_mode', False) and st.session_state.pdf_content:
@@ -266,9 +329,10 @@ else:
                 char_count = len(st.session_state.pdf_content)
                 st.info(f"📊 **Stats:** {word_count:,} words, {char_count:,} characters")
             
+            st.markdown("---")
             pdf_display = f"""
             <iframe src="data:application/pdf;base64,{st.session_state.pdf_base64}" 
-                    width="100%" height="800px" style="border: 1px solid #ddd; border-radius: 8px;">
+                    width="100%" height="600px" style="border: 1px solid #ddd; border-radius: 8px;">
                 <p>Your browser doesn't support PDF viewing. 
                 <a href="data:application/pdf;base64,{st.session_state.pdf_base64}">Download the PDF</a> to view it.</p>
             </iframe>
