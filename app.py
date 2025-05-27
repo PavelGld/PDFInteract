@@ -168,10 +168,31 @@ else:
             with st.spinner("🤔 Thinking..."):
                 try:
                     # Search for relevant chunks
-                    relevant_chunks = st.session_state.vector_store.search(prompt, k=5)
+                    relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.01)
+                    
+                    # Debug information
+                    total_chunks = len(st.session_state.vector_store.chunks) if st.session_state.vector_store.chunks else 0
+                    st.write(f"**Debug:** Всего фрагментов в документе: {total_chunks}")
+                    st.write(f"**Debug:** Найдено {len(relevant_chunks)} релевантных фрагментов для запроса: '{prompt}'")
+                    
+                    if relevant_chunks:
+                        for i, chunk in enumerate(relevant_chunks[:2]):
+                            st.write(f"**Фрагмент {i+1}** (Score: {chunk.get('score', 0):.3f}):")
+                            st.write(f"```\n{chunk['content'][:300]}...\n```")
                     
                     # Prepare context from relevant chunks
                     context = "\n\n".join([chunk["content"] for chunk in relevant_chunks])
+                    
+                    if not context.strip():
+                        # Fallback: use first few chunks if no relevant ones found
+                        if st.session_state.vector_store.chunks:
+                            context = "\n\n".join([chunk["content"] for chunk in st.session_state.vector_store.chunks[:3]])
+                            st.write("**Debug:** Поиск не дал результатов, использую первые фрагменты документа")
+                        else:
+                            context = "Документ не содержит доступного текста."
+                    
+                    # Show context length
+                    st.write(f"**Debug:** Размер контекста для модели: {len(context)} символов")
                     
                     # Get response from OpenRouter
                     response = openrouter_client.get_response(

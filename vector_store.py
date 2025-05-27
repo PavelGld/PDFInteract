@@ -140,7 +140,7 @@ class VectorStore:
     
     def search(self, query: str, k: int = 5, score_threshold: float = 0.1) -> List[Dict[str, Any]]:
         """
-        Search for similar chunks using TF-IDF cosine similarity.
+        Search for similar chunks using TF-IDF cosine similarity and keyword matching.
         
         Args:
             query: Search query text
@@ -157,14 +157,39 @@ class VectorStore:
         query_words = self._preprocess_text(query)
         query_vector = self._create_tfidf_vector(query_words)
         
-        # Calculate similarities
+        # Calculate similarities with both TF-IDF and keyword matching
         similarities = []
+        query_lower = query.lower()
+        
         for i, chunk_vector in enumerate(self.tfidf_vectors):
-            score = self._cosine_similarity(query_vector, chunk_vector)
-            if score >= score_threshold:
+            # TF-IDF cosine similarity
+            tfidf_score = self._cosine_similarity(query_vector, chunk_vector)
+            
+            # Keyword matching boost
+            chunk_content_lower = self.chunks[i]['content'].lower()
+            keyword_matches = 0
+            for word in query_words:
+                if word in chunk_content_lower:
+                    keyword_matches += 1
+            
+            # Combine scores with keyword boost
+            keyword_boost = keyword_matches / max(len(query_words), 1) * 0.3
+            final_score = tfidf_score + keyword_boost
+            
+            # Also check for exact phrase matches
+            if len(query.strip()) > 3 and query.strip().lower() in chunk_content_lower:
+                final_score += 0.5
+            
+            if final_score >= score_threshold:
                 chunk = self.chunks[i].copy()
-                chunk['score'] = score
+                chunk['score'] = final_score
+                chunk['tfidf_score'] = tfidf_score
+                chunk['keyword_matches'] = keyword_matches
                 similarities.append(chunk)
+        
+        # If no good matches found, try with lower threshold
+        if not similarities and score_threshold > 0.01:
+            return self.search(query, k, 0.01)
         
         # Sort by score (descending) and return top k
         similarities.sort(key=lambda x: x['score'], reverse=True)
