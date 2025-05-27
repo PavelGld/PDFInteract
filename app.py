@@ -211,30 +211,30 @@ with st.sidebar:
                         if 'tmp_file_path' in locals():
                             os.unlink(tmp_file_path)
     
-    # Main content area - tabs layout for full screen PDF
+    # Main content area - side by side: Chat left, PDF right
     if st.session_state.pdf_processed and st.session_state.pdf_name:
         st.success(f"📚 **Current PDF:** {st.session_state.pdf_name}")
         
-        # Create tabs for PDF viewing and chat
-        tab1, tab2 = st.tabs(["💬 Chat with PDF", "📄 View PDF"])
+        # Create two equal columns for chat and PDF
+        chat_col, pdf_col = st.columns([1, 1], gap="medium")
         
-        with tab1:
-            st.markdown("### Chat Interface")
+        with chat_col:
+            st.markdown("### 💬 Chat with PDF")
             
-            # Show PDF stats only in debug mode in chat tab
+            # Show PDF stats only in debug mode
             if st.session_state.get('debug_mode', False) and st.session_state.pdf_content:
                 word_count = len(st.session_state.pdf_content.split())
                 char_count = len(st.session_state.pdf_content)
                 st.info(f"📊 **Stats:** {word_count:,} words, {char_count:,} characters")
         
-        with tab2:
-            st.markdown("### PDF Document")
+        with pdf_col:
+            st.markdown("### 📄 PDF Document")
             
-            # PDF viewer with full screen width
+            # PDF viewer in right column
             if st.session_state.get('pdf_base64'):
                 pdf_display = f"""
                 <iframe src="data:application/pdf;base64,{st.session_state.pdf_base64}" 
-                        width="100%" height="850px" style="border: 1px solid #ddd; border-radius: 8px;">
+                        width="100%" height="700px" style="border: 1px solid #ddd; border-radius: 8px;">
                     <p>Your browser doesn't support PDF viewing. 
                     <a href="data:application/pdf;base64,{st.session_state.pdf_base64}">Download the PDF</a> to view it.</p>
                 </iframe>
