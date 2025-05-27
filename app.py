@@ -93,7 +93,7 @@ with st.sidebar:
         "GPT-4o Mini 🖼️ (Vision)": "openai/gpt-4o-mini", 
         "GPT-4 Turbo 🖼️ (Vision)": "openai/gpt-4-turbo",
         "GPT-3.5 Turbo": "openai/gpt-3.5-turbo",
-        "Claude 3.5 Sonnet 🖼️ (Vision)": "anthropic/claude-3-5-sonnet-20241022",
+        "Claude 3.5 Sonnet 🖼️ (Vision)": "anthropic/claude-3-5-sonnet-20240620",
         "Claude 3 Opus 🖼️ (Vision)": "anthropic/claude-3-opus-20240229",
         "Claude 3 Haiku 🖼️ (Vision)": "anthropic/claude-3-haiku-20240307",
         "Gemini Pro 1.5 🖼️ (Vision)": "google/gemini-pro-1.5",
@@ -232,11 +232,8 @@ with st.sidebar:
                             if images:
                                 images_description = f"Документ содержит {len(images)} изображений"
                             
-                            # Extract topics using LLM
-                            topics = topic_extractor.extract_topics_llm(text_content, images_description, st.session_state.selected_model)
-                            
-                            # Generate document summary
-                            summary = topic_extractor.generate_document_summary(text_content, topics)
+                            # Generate document summary only
+                            summary = topic_extractor.generate_document_summary(text_content, [])
                             
                             # Create vector store with Course API
                             course_api_key = os.environ.get("COURSE_API_KEY")
@@ -256,7 +253,7 @@ with st.sidebar:
                             st.session_state.pdf_content = text_content
                             st.session_state.pdf_name = uploaded_file.name
                             st.session_state.pdf_base64 = pdf_base64
-                            st.session_state.document_topics = topics
+                            st.session_state.document_topics = []
                             st.session_state.document_images = images
                             st.session_state.document_summary = summary
                             st.session_state.messages = []  # Clear previous chat
@@ -264,8 +261,6 @@ with st.sidebar:
                             success_msg = f"✅ Successfully processed {len(chunks)} text chunks"
                             if images:
                                 success_msg += f" and {len(images)} images"
-                            if topics:
-                                success_msg += f". Topics: {', '.join(topics[:3])}{'...' if len(topics) > 3 else ''}"
                             
                             st.success(success_msg)
                             st.rerun()
@@ -296,16 +291,6 @@ else:
     
     with pdf_tab:
         st.markdown("### PDF Document")
-        
-        # Show document topics and summary
-        if st.session_state.get('document_topics'):
-            st.markdown("**🏷️ Тематические метки:**")
-            # Display topics as colored badges
-            topics_html = ""
-            for topic in st.session_state.document_topics:
-                topics_html += f'<span style="background-color: #e1f5fe; color: #01579b; padding: 2px 8px; border-radius: 12px; margin: 2px; display: inline-block; font-size: 0.85em;">{topic}</span>'
-            st.markdown(topics_html, unsafe_allow_html=True)
-            st.markdown("")
         
         # Show document summary
         if st.session_state.get('document_summary'):
