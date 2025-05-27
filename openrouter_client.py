@@ -13,7 +13,7 @@ OpenRouter API Client для PDF Chat Assistant
 
 import requests
 import json
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Optional
 
 class OpenRouterClient:
     def __init__(self, api_key: str, base_url: str = "https://openrouter.ai/api/v1"):
@@ -41,7 +41,7 @@ class OpenRouterClient:
         model: str = "openai/gpt-3.5-turbo",
         max_tokens: int = 1000,
         temperature: float = 0.7,
-        images: List[str] = None
+        images: Optional[List[str]] = None
     ) -> str:
         """
         Get response from OpenRouter API using RAG context.
@@ -68,8 +68,29 @@ class OpenRouterClient:
             recent_messages = messages[-10:] if len(messages) > 10 else messages
             api_messages.extend(recent_messages)
             
-            # Add current question
-            api_messages.append({"role": "user", "content": question})
+            # Add current question with images if available
+            if images and len(images) > 0:
+                # Create message content with text and images for vision models
+                message_content = [
+                    {"type": "text", "text": question}
+                ]
+                
+                # Add images (limit to first 3 for performance)
+                for img_base64 in images[:3]:
+                    message_content.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{img_base64}"
+                        }
+                    })
+                
+                api_messages.append({
+                    "role": "user",
+                    "content": message_content
+                })
+            else:
+                # Text-only message
+                api_messages.append({"role": "user", "content": question})
             
             # Prepare request payload
             payload = {
