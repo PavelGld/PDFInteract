@@ -87,14 +87,14 @@ address = "0.0.0.0"
 port = 5000
 ```
 
-### Поддерживаемые LLM модели
+### Поддерживаемые LLM модели (13 моделей)
 
-- OpenAI GPT-3.5 Turbo
-- OpenAI GPT-4
-- Anthropic Claude 3 Haiku
-- Anthropic Claude 3.5 Sonnet
-- DeepSeek V3
-- Google Gemini Pro
+- **OpenAI**: GPT-4o, GPT-4o Mini, GPT-4 Turbo, GPT-3.5 Turbo
+- **Anthropic**: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku  
+- **Google**: Gemini Pro 1.5, Gemini Flash 1.5
+- **Meta**: Llama 3.1 405B, Llama 3.1 70B
+- **Mistral**: Mixtral 8x7B
+- **Qwen**: Qwen 2.5 72B
 
 ## 📊 Рабочий процесс
 

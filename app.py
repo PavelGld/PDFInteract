@@ -6,10 +6,20 @@ Streamlit веб-приложение для интерактивного чат
 и генерации ответов через OpenRouter API.
 
 Основные компоненты:
-- PDF загрузка и обработка
-- Векторное хранилище с эмбеддингами
-- LLM интеграция через OpenRouter
-- Пользовательский интерфейс чата
+- PDF загрузка и обработка текста
+- Векторное хранилище с эмбеддингами через Course API
+- LLM интеграция через OpenRouter (13 моделей)
+- Тематические метки документов
+- Интерактивный чат с историей
+- Экспорт/импорт чатов
+
+Поддерживаемые модели:
+OpenAI (GPT-4o, GPT-4o Mini, GPT-4 Turbo, GPT-3.5 Turbo)
+Anthropic (Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku)
+Google (Gemini Pro 1.5, Gemini Flash 1.5)
+Meta (Llama 3.1 405B, Llama 3.1 70B)
+Mistral (Mixtral 8x7B)
+Qwen (Qwen 2.5 72B)
 """
 
 import streamlit as st
@@ -67,9 +77,16 @@ def get_openrouter_client():
         st.stop()
     return OpenRouterClient(api_key)
 
-# Initialize clients without caching to ensure latest version
+# Initialize application components
 pdf_processor = PDFProcessor()
-openrouter_client = OpenRouterClient(os.environ.get("OPENROUTER_API_KEY"))
+
+# Initialize OpenRouter client with API key validation
+api_key = os.environ.get("OPENROUTER_API_KEY")
+if not api_key:
+    st.error("⚠️ OpenRouter API key not found. Please set OPENROUTER_API_KEY environment variable.")
+    st.stop()
+
+openrouter_client = OpenRouterClient(api_key)
 topic_extractor = TopicExtractor(openrouter_client)
 
 # Sidebar for PDF upload and settings
