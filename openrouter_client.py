@@ -40,7 +40,8 @@ class OpenRouterClient:
         context: str, 
         model: str = "openai/gpt-3.5-turbo",
         max_tokens: int = 1000,
-        temperature: float = 0.7
+        temperature: float = 0.7,
+        images: List[str] = None
     ) -> str:
         """
         Get response from OpenRouter API using RAG context.
