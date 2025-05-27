@@ -1,3 +1,17 @@
+"""
+PDF Chat Assistant - Главное приложение
+
+Streamlit веб-приложение для интерактивного чата с PDF документами.
+Использует RAG (Retrieval-Augmented Generation) для поиска релевантного контекста
+и генерации ответов через OpenRouter API.
+
+Основные компоненты:
+- PDF загрузка и обработка
+- Векторное хранилище с эмбеддингами
+- LLM интеграция через OpenRouter
+- Пользовательский интерфейс чата
+"""
+
 import streamlit as st
 import os
 import tempfile
