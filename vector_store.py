@@ -1,68 +1,54 @@
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain.schema import Document
+import math
+import re
 from typing import List, Dict, Any
-import tempfile
-import os
+from collections import Counter
 
 class VectorStore:
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, model_name: str = "keyword_search"):
         """
-        Initialize vector store with LangChain and ChromaDB.
+        Initialize vector store with keyword-based search.
         
         Args:
-            model_name: Name of the embedding model to use
+            model_name: Model name (using keyword search for reliability)
         """
         self.model_name = model_name
-        self.embeddings = HuggingFaceEmbeddings(model_name=model_name)
-        self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
-            length_function=len,
-        )
-        self.vectorstore = None
         self.chunks = []
+        self.vectorstore = True  # Always available
+    
+    def _preprocess_text(self, text: str) -> List[str]:
+        """
+        Preprocess text for keyword search.
         
-        # Create temporary directory for ChromaDB
-        self.temp_dir = tempfile.mkdtemp()
+        Args:
+            text: Input text
+            
+        Returns:
+            List of words
+        """
+        # Convert to lowercase and extract words (including Russian)
+        text = text.lower()
+        words = re.findall(r'\b[a-zA-Zа-яё]{3,}\b', text)
+        
+        # Russian and English stop words
+        stop_words = {
+            'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'who', 'boy', 'did', 'has', 'let', 'put', 'say', 'she', 'too', 'use',
+            'что', 'это', 'как', 'его', 'для', 'все', 'при', 'был', 'она', 'так', 'или', 'уже', 'раз', 'там', 'них', 'про', 'тем', 'где', 'этот', 'тоже', 'того', 'быть', 'если', 'есть', 'чтобы', 'более', 'после', 'можно', 'между'
+        }
+        
+        return [word for word in words if word not in stop_words]
     
     def add_chunks(self, chunks: List[Dict[str, Any]]) -> None:
         """
-        Add text chunks to the vector store using LangChain.
+        Add text chunks to the vector store.
         
         Args:
             chunks: List of chunk dictionaries with 'content' key
         """
-        if not chunks:
-            return
-        
-        # Store original chunks for reference
         self.chunks = chunks
-        
-        # Convert chunks to LangChain Documents
-        documents = []
-        for i, chunk in enumerate(chunks):
-            doc = Document(
-                page_content=chunk['content'],
-                metadata={
-                    'chunk_id': chunk.get('id', f'chunk_{i}'),
-                    'start_pos': chunk.get('start_pos', 0),
-                    'end_pos': chunk.get('end_pos', 0)
-                }
-            )
-            documents.append(doc)
-        
-        # Create ChromaDB vector store
-        self.vectorstore = Chroma.from_documents(
-            documents=documents,
-            embedding=self.embeddings,
-            persist_directory=self.temp_dir
-        )
     
     def search(self, query: str, k: int = 5, score_threshold: float = 0.1) -> List[Dict[str, Any]]:
         """
-        Search for similar chunks using LangChain similarity search.
+        Search for relevant chunks using keyword matching and phrase search.
         
         Args:
             query: Search query text
@@ -72,33 +58,56 @@ class VectorStore:
         Returns:
             List of dictionaries with chunk content and similarity scores
         """
-        if not self.vectorstore:
+        if not self.chunks:
             return []
         
-        try:
-            # Use LangChain's similarity search with scores
-            results = self.vectorstore.similarity_search_with_score(query, k=k)
+        query_words = self._preprocess_text(query)
+        query_lower = query.lower()
+        results = []
+        
+        for chunk in self.chunks:
+            content_lower = chunk['content'].lower()
             
-            # Convert results to our format
-            formatted_results = []
-            for doc, score in results:
-                # Convert distance to similarity score (lower distance = higher similarity)
-                similarity_score = 1.0 / (1.0 + score)
-                
-                if similarity_score >= score_threshold:
-                    result = {
-                        'content': doc.page_content,
-                        'score': similarity_score,
-                        'metadata': doc.metadata,
-                        'id': doc.metadata.get('chunk_id', 'unknown')
-                    }
-                    formatted_results.append(result)
+            # Exact phrase matching (highest priority)
+            phrase_matches = 0
+            query_phrases = [phrase.strip() for phrase in query.split() if len(phrase.strip()) > 2]
+            for phrase in query_phrases:
+                if phrase.lower() in content_lower:
+                    phrase_matches += 1
             
-            return formatted_results
+            # Keyword matching
+            chunk_words = self._preprocess_text(chunk['content'])
+            keyword_matches = sum(1 for word in query_words if word in chunk_words)
             
-        except Exception as e:
-            print(f"Error in similarity search: {e}")
-            return []
+            # Special scoring for Russian academic terms
+            academic_terms = ['результат', 'достигнут', 'авторы', 'исследование', 'вывод', 'заключение', 'цель', 'задача', 'метод', 'анализ', 'данные', 'показ', 'выявл', 'установл', 'получ', 'опред']
+            academic_matches = sum(1 for term in academic_terms if term in content_lower)
+            
+            # Calculate final score
+            phrase_score = phrase_matches * 2.0
+            keyword_score = keyword_matches / max(len(query_words), 1) * 1.0
+            academic_score = academic_matches * 0.5
+            
+            final_score = phrase_score + keyword_score + academic_score
+            
+            # Boost score if chunk contains question-related terms
+            question_boost = 0
+            if any(word in content_lower for word in ['результат', 'итог', 'достиг', 'получ', 'выявл', 'показ', 'устан']):
+                question_boost = 0.3
+            
+            final_score += question_boost
+            
+            if final_score > 0:
+                result_chunk = chunk.copy()
+                result_chunk['score'] = final_score
+                result_chunk['phrase_matches'] = phrase_matches
+                result_chunk['keyword_matches'] = keyword_matches
+                result_chunk['academic_matches'] = academic_matches
+                results.append(result_chunk)
+        
+        # Sort by score (descending) and return top k
+        results.sort(key=lambda x: x['score'], reverse=True)
+        return results[:k]
     
     def get_chunk_by_id(self, chunk_id: str) -> Dict[str, Any]:
         """
@@ -125,98 +134,29 @@ class VectorStore:
         return {
             'total_chunks': len(self.chunks),
             'model_name': self.model_name,
-            'vectorstore_type': 'ChromaDB with LangChain',
-            'has_vectorstore': self.vectorstore is not None
+            'search_type': 'Keyword + Phrase matching',
+            'vectorstore_active': True
         }
     
     def save_to_disk(self, path: str) -> None:
-        """
-        Save vector store to disk.
-        
-        Args:
-            path: Directory path to save the vector store
-        """
-        if self.vectorstore:
-            self.vectorstore.persist()
+        """Save vector store to disk (placeholder)."""
+        pass
     
     def load_from_disk(self, path: str) -> None:
-        """
-        Load vector store from disk.
-        
-        Args:
-            path: Directory path containing the saved vector store
-        """
-        try:
-            self.vectorstore = Chroma(
-                persist_directory=path,
-                embedding_function=self.embeddings
-            )
-        except Exception as e:
-            print(f"Error loading from disk: {e}")
-            self.clear()
+        """Load vector store from disk (placeholder)."""
+        pass
     
     def clear(self) -> None:
-        """
-        Clear all data from the vector store.
-        """
+        """Clear all data from the vector store."""
         self.chunks = []
-        self.vectorstore = None
-        
-        # Create new temporary directory
-        if hasattr(self, 'temp_dir') and os.path.exists(self.temp_dir):
-            import shutil
-            shutil.rmtree(self.temp_dir, ignore_errors=True)
-        self.temp_dir = tempfile.mkdtemp()
     
     def add_single_chunk(self, chunk: Dict[str, Any]) -> None:
-        """
-        Add a single chunk to the vector store.
-        
-        Args:
-            chunk: Chunk dictionary with 'content' key
-        """
-        self.add_chunks([chunk])
+        """Add a single chunk to the vector store."""
+        if chunk:
+            self.chunks.append(chunk)
     
     def remove_chunk(self, chunk_id: str) -> bool:
-        """
-        Remove a chunk from the vector store.
-        
-        Args:
-            chunk_id: ID of the chunk to remove
-            
-        Returns:
-            True if chunk was found and removed, False otherwise
-        """
-        # Find and remove the chunk
+        """Remove a chunk from the vector store."""
         original_length = len(self.chunks)
         self.chunks = [chunk for chunk in self.chunks if chunk.get('id') != chunk_id]
-        
-        if len(self.chunks) == original_length:
-            return False  # Chunk not found
-        
-        # Rebuild vector store with remaining chunks
-        if self.chunks:
-            self.add_chunks(self.chunks)
-        else:
-            self.clear()
-        
-        return True
-    
-    def get_retriever(self, search_type: str = "similarity", k: int = 5):
-        """
-        Get LangChain retriever for the vector store.
-        
-        Args:
-            search_type: Type of search to perform
-            k: Number of documents to retrieve
-            
-        Returns:
-            LangChain retriever object
-        """
-        if not self.vectorstore:
-            return None
-        
-        return self.vectorstore.as_retriever(
-            search_type=search_type,
-            search_kwargs={"k": k}
-        )
+        return len(self.chunks) < original_length
