@@ -1,44 +1,81 @@
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+import requests
 import numpy as np
 from typing import List, Dict, Any
-import os
+import json
+from sklearn.metrics.pairwise import cosine_similarity
 
 class VectorStore:
     def __init__(self, api_key: str):
         """
-        Initialize vector store with TF-IDF vectorization.
+        Initialize vector store with OpenRouter embeddings.
         
         Args:
-            api_key: API key (kept for compatibility)
+            api_key: OpenRouter API key
         """
-        # Set up text splitter
-        self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
-            length_function=len,
-        )
-        
-        # Use TF-IDF for reliable vectorization
-        self.vectorizer = TfidfVectorizer(
-            max_features=5000,
-            stop_words='english',
-            ngram_range=(1, 2),  # Include bigrams for better context
-            min_df=1,
-            max_df=0.95
-        )
-        
-        self.vectorstore = None
+        self.api_key = api_key
+        self.base_url = "https://openrouter.ai/api/v1"
         self.chunks = []
-        self.documents = []
-        self.tfidf_matrix = None
-        self.is_fitted = False
+        self.embeddings = []
+        self.vectorstore = None
+        
+    def get_embeddings(self, texts: List[str]) -> List[List[float]]:
+        """
+        Get embeddings from OpenRouter API.
+        
+        Args:
+            texts: List of texts to embed
+            
+        Returns:
+            List of embedding vectors
+        """
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://streamlit.io",
+            "X-Title": "PDF Chat Assistant"
+        }
+        
+        # Try different embedding models that might be available
+        embedding_models = [
+            "openai/text-embedding-3-small",
+            "openai/text-embedding-ada-002", 
+            "text-embedding-3-small",
+            "text-embedding-ada-002"
+        ]
+        
+        for model in embedding_models:
+            try:
+                data = {
+                    "model": model,
+                    "input": texts
+                }
+                
+                response = requests.post(
+                    f"{self.base_url}/embeddings",
+                    headers=headers,
+                    json=data,
+                    timeout=30
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    embeddings = [item["embedding"] for item in result["data"]]
+                    print(f"Successfully got embeddings using model: {model}")
+                    return embeddings
+                else:
+                    print(f"Model {model} failed with status {response.status_code}: {response.text}")
+                    continue
+                    
+            except Exception as e:
+                print(f"Error with model {model}: {e}")
+                continue
+        
+        # If all models fail, raise an error
+        raise Exception("Could not get embeddings from any available model")
     
     def add_chunks(self, chunks: List[Dict[str, Any]]) -> None:
         """
-        Add text chunks to the vector store using TF-IDF.
+        Add text chunks to the vector store.
         
         Args:
             chunks: List of chunk dictionaries with 'content' key
@@ -48,37 +85,31 @@ class VectorStore:
         
         self.chunks = chunks
         
-        # Convert chunks to LangChain Documents
-        documents = []
-        texts = []
-        for chunk in chunks:
-            doc = Document(
-                page_content=chunk['content'],
-                metadata={
-                    'chunk_id': chunk.get('id', ''),
-                    'start_pos': chunk.get('start_pos', 0),
-                    'end_pos': chunk.get('end_pos', 0)
-                }
-            )
-            documents.append(doc)
-            texts.append(chunk['content'])
-        
-        self.documents = documents
-        
-        # Create TF-IDF matrix
         try:
-            self.tfidf_matrix = self.vectorizer.fit_transform(texts)
-            self.is_fitted = True
-            self.vectorstore = True  # Mark as active
-            print(f"Successfully created TF-IDF vector store with {len(documents)} documents")
+            # Extract texts from chunks
+            texts = [chunk['content'] for chunk in chunks]
+            
+            # Get embeddings in batches to avoid API limits
+            batch_size = 100  # Adjust based on API limits
+            all_embeddings = []
+            
+            for i in range(0, len(texts), batch_size):
+                batch_texts = texts[i:i + batch_size]
+                batch_embeddings = self.get_embeddings(batch_texts)
+                all_embeddings.extend(batch_embeddings)
+                print(f"Processed batch {i//batch_size + 1}/{(len(texts) + batch_size - 1)//batch_size}")
+            
+            self.embeddings = np.array(all_embeddings)
+            self.vectorstore = True
+            print(f"Successfully created vector store with {len(chunks)} documents")
+            
         except Exception as e:
             print(f"Error creating vector store: {e}")
             self.vectorstore = None
-            self.is_fitted = False
     
     def search(self, query: str, k: int = 5, score_threshold: float = 0.1) -> List[Dict[str, Any]]:
         """
-        Search for similar chunks using TF-IDF similarity.
+        Search for similar chunks using embedding similarity.
         
         Args:
             query: Search query text
@@ -88,21 +119,22 @@ class VectorStore:
         Returns:
             List of dictionaries with chunk content and similarity scores
         """
-        if not self.is_fitted or self.tfidf_matrix is None:
+        if self.vectorstore is None or len(self.embeddings) == 0:
             print("Vector store not initialized")
             return []
         
         try:
-            # Transform query using fitted vectorizer
-            query_vector = self.vectorizer.transform([query])
+            # Get query embedding
+            query_embedding = self.get_embeddings([query])[0]
+            query_vector = np.array(query_embedding).reshape(1, -1)
             
             # Calculate cosine similarities
-            similarities = cosine_similarity(query_vector, self.tfidf_matrix).flatten()
+            similarities = cosine_similarity(query_vector, self.embeddings).flatten()
             
             # Get top k indices
             top_indices = similarities.argsort()[-k:][::-1]
             
-            # Convert results to our format
+            # Format results
             formatted_results = []
             for idx in top_indices:
                 similarity_score = similarities[idx]
@@ -111,9 +143,13 @@ class VectorStore:
                     result = {
                         'content': self.chunks[idx]['content'],
                         'score': float(similarity_score),
-                        'distance': float(1.0 - similarity_score),  # Convert to distance
-                        'metadata': self.documents[idx].metadata,
-                        'id': self.documents[idx].metadata.get('chunk_id', 'unknown')
+                        'distance': float(1.0 - similarity_score),
+                        'metadata': {
+                            'chunk_id': self.chunks[idx].get('id', ''),
+                            'start_pos': self.chunks[idx].get('start_pos', 0),
+                            'end_pos': self.chunks[idx].get('end_pos', 0)
+                        },
+                        'id': self.chunks[idx].get('id', 'unknown')
                     }
                     formatted_results.append(result)
             
@@ -126,29 +162,16 @@ class VectorStore:
     def get_retriever(self, search_type: str = "similarity", k: int = 5):
         """
         Get retriever-like interface.
-        
-        Args:
-            search_type: Type of search to perform
-            k: Number of documents to retrieve
-            
-        Returns:
-            Custom retriever function
         """
         def retrieve(query: str):
             results = self.search(query, k=k, score_threshold=0.0)
-            return [self.documents[i] for i, _ in enumerate(results) if i < len(self.documents)]
+            return results
         
         return retrieve
     
     def get_chunk_by_id(self, chunk_id: str) -> Dict[str, Any]:
         """
         Retrieve a specific chunk by its ID.
-        
-        Args:
-            chunk_id: ID of the chunk to retrieve
-            
-        Returns:
-            Chunk dictionary or empty dict if not found
         """
         for chunk in self.chunks:
             if chunk.get('id') == chunk_id:
@@ -158,74 +181,42 @@ class VectorStore:
     def get_stats(self) -> Dict[str, Any]:
         """
         Get statistics about the vector store.
-        
-        Returns:
-            Dictionary with vector store statistics
         """
         return {
             'total_chunks': len(self.chunks),
-            'total_documents': len(self.documents),
-            'vectorstore_type': 'TF-IDF with scikit-learn',
-            'vectorstore_active': self.vectorstore is not None and self.is_fitted,
-            'embedding_model': 'TF-IDF Vectorization'
+            'total_documents': len(self.chunks),
+            'vectorstore_type': 'OpenRouter Embeddings',
+            'vectorstore_active': self.vectorstore is not None,
+            'embedding_model': 'OpenRouter API',
+            'embedding_dimensions': len(self.embeddings[0]) if len(self.embeddings) > 0 else 0
         }
     
     def save_to_disk(self, path: str) -> None:
-        """
-        Save vector store to disk.
-        
-        Args:
-            path: Directory path to save the vector store
-        """
-        # For TF-IDF, we could save the vectorizer and matrix
-        print(f"TF-IDF vector store ready (no disk save needed)")
+        """Save vector store to disk."""
+        print("OpenRouter embeddings vector store ready")
     
     def load_from_disk(self, path: str) -> None:
-        """
-        Load vector store from disk.
-        
-        Args:
-            path: Directory path containing the saved vector store
-        """
-        print(f"TF-IDF vector store initialization from memory")
+        """Load vector store from disk."""
+        print("OpenRouter embeddings vector store loaded")
     
     def clear(self) -> None:
-        """
-        Clear all data from the vector store.
-        """
+        """Clear all data from the vector store."""
         self.chunks = []
-        self.documents = []
+        self.embeddings = []
         self.vectorstore = None
-        self.tfidf_matrix = None
-        self.is_fitted = False
     
     def add_single_chunk(self, chunk: Dict[str, Any]) -> None:
-        """
-        Add a single chunk to the vector store.
-        
-        Args:
-            chunk: Chunk dictionary with 'content' key
-        """
+        """Add a single chunk to the vector store."""
         self.add_chunks([chunk])
     
     def remove_chunk(self, chunk_id: str) -> bool:
-        """
-        Remove a chunk from the vector store.
-        
-        Args:
-            chunk_id: ID of the chunk to remove
-            
-        Returns:
-            True if chunk was found and removed, False otherwise
-        """
-        # Find and remove the chunk
+        """Remove a chunk from the vector store."""
         original_length = len(self.chunks)
         self.chunks = [chunk for chunk in self.chunks if chunk.get('id') != chunk_id]
         
         if len(self.chunks) == original_length:
-            return False  # Chunk not found
+            return False
         
-        # Rebuild vector store with remaining chunks
         if self.chunks:
             self.add_chunks(self.chunks)
         else:
