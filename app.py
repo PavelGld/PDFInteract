@@ -365,64 +365,65 @@ else:
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
+
+# Chat input - always at the bottom of the page
+if st.session_state.pdf_processed:
+    if prompt := st.chat_input("Ask a question about your PDF..."):
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": prompt})
         
-        # Chat input
-        if prompt := st.chat_input("Ask a question about your PDF..."):
-            # Add user message to chat history
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            
-            # Display user message
-            with st.chat_message("user"):
-                st.markdown(prompt)
-            
-            # Generate and display assistant response
-            with st.chat_message("assistant"):
-                with st.spinner("🤔 Thinking..."):
-                    try:
-                        # Search for relevant chunks
-                        relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.5)
-                        
-                        # Debug information - show only if debug mode is enabled
-                        if st.session_state.get('debug_mode', False):
-                            stats = st.session_state.vector_store.get_stats()
-                            total_chunks = stats.get('total_chunks', 0)
-                            st.info(f"🔍 **Search Results:** Found {len(relevant_chunks)} relevant chunks from {total_chunks} total chunks")
-                            
-                            if relevant_chunks:
-                                with st.expander("📄 View Retrieved Context", expanded=False):
-                                    for i, chunk in enumerate(relevant_chunks[:3]):  # Show top 3
-                                        st.write(f"**Chunk {i+1}** (Score: {chunk.get('score', 0):.3f})")
-                                        st.write(chunk.get('content', '')[:300] + "...")
-                                        st.divider()
+        # Display user message
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        
+        # Generate and display assistant response
+        with st.chat_message("assistant"):
+            with st.spinner("🤔 Thinking..."):
+                try:
+                    # Search for relevant chunks
+                    relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.5)
+                    
+                    # Debug information - show only if debug mode is enabled
+                    if st.session_state.get('debug_mode', False):
+                        stats = st.session_state.vector_store.get_stats()
+                        total_chunks = stats.get('total_chunks', 0)
+                        st.info(f"🔍 **Search Results:** Found {len(relevant_chunks)} relevant chunks from {total_chunks} total chunks")
                         
                         if relevant_chunks:
-                            # Combine contexts
-                            context = "\n\n".join([chunk['content'] for chunk in relevant_chunks])
-                            
-                            # Get response from OpenRouter
-                            response = openrouter_client.get_response(
-                                messages=st.session_state.messages[:-1],  # Exclude current message
-                                question=prompt,
-                                context=context,
-                                model=st.session_state.selected_model,
-                                max_tokens=1000,
-                                temperature=0.7
-                            )
-                            
-                            st.markdown(response)
-                            
-                            # Add assistant response to chat history
-                            st.session_state.messages.append({"role": "assistant", "content": response})
-                        else:
-                            # No relevant context found
-                            response = "I couldn't find relevant information in the document to answer your question. Could you try rephrasing your question or ask about something more specific from the PDF content?"
-                            st.markdown(response)
-                            st.session_state.messages.append({"role": "assistant", "content": response})
-                            
-                    except Exception as e:
-                        error_msg = f"❌ Error generating response: {str(e)}"
-                        st.error(error_msg)
-                        st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                            with st.expander("📄 View Retrieved Context", expanded=False):
+                                for i, chunk in enumerate(relevant_chunks[:3]):  # Show top 3
+                                    st.write(f"**Chunk {i+1}** (Score: {chunk.get('score', 0):.3f})")
+                                    st.write(chunk.get('content', '')[:300] + "...")
+                                    st.divider()
+                    
+                    if relevant_chunks:
+                        # Combine contexts
+                        context = "\n\n".join([chunk['content'] for chunk in relevant_chunks])
+                        
+                        # Get response from OpenRouter
+                        response = openrouter_client.get_response(
+                            messages=st.session_state.messages[:-1],  # Exclude current message
+                            question=prompt,
+                            context=context,
+                            model=st.session_state.selected_model,
+                            max_tokens=1000,
+                            temperature=0.7
+                        )
+                        
+                        st.markdown(response)
+                        
+                        # Add assistant response to chat history
+                        st.session_state.messages.append({"role": "assistant", "content": response})
+                    else:
+                        # No relevant context found
+                        response = "I couldn't find relevant information in the document to answer your question. Could you try rephrasing your question or ask about something more specific from the PDF content?"
+                        st.markdown(response)
+                        st.session_state.messages.append({"role": "assistant", "content": response})
+                        
+                except Exception as e:
+                    error_msg = f"❌ Error generating response: {str(e)}"
+                    st.error(error_msg)
+                    st.session_state.messages.append({"role": "assistant", "content": error_msg})
 
 # Footer
 st.markdown("---")
