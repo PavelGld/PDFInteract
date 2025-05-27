@@ -2,7 +2,7 @@ modules = ["python-3.11"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["bash"]
+packages = ["bash", "cargo", "libiconv", "rustc"]
 
 [deployment]
 deploymentTarget = "autoscale"
