@@ -167,29 +167,38 @@ else:
         with st.chat_message("assistant"):
             with st.spinner("🤔 Thinking..."):
                 try:
-                    # Search for relevant chunks
-                    relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.01)
+                    # Search for relevant chunks using LangChain
+                    relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.3)
                     
                     # Debug information
                     total_chunks = len(st.session_state.vector_store.chunks) if st.session_state.vector_store.chunks else 0
+                    vectorstore_status = "Активен" if st.session_state.vector_store.vectorstore else "Не инициализирован"
+                    
                     st.write(f"**Debug:** Всего фрагментов в документе: {total_chunks}")
-                    st.write(f"**Debug:** Найдено {len(relevant_chunks)} релевантных фрагментов для запроса: '{prompt}'")
+                    st.write(f"**Debug:** Статус векторного хранилища: {vectorstore_status}")
+                    st.write(f"**Debug:** Найдено {len(relevant_chunks)} релевантных фрагментов (LangChain + ChromaDB)")
                     
                     if relevant_chunks:
+                        st.write("**Найденные релевантные фрагменты:**")
                         for i, chunk in enumerate(relevant_chunks[:2]):
-                            st.write(f"**Фрагмент {i+1}** (Score: {chunk.get('score', 0):.3f}):")
-                            st.write(f"```\n{chunk['content'][:300]}...\n```")
+                            st.write(f"**Фрагмент {i+1}** (Similarity: {chunk.get('score', 0):.3f}):")
+                            st.write(f"```\n{chunk['content'][:400]}...\n```")
                     
                     # Prepare context from relevant chunks
-                    context = "\n\n".join([chunk["content"] for chunk in relevant_chunks])
-                    
-                    if not context.strip():
-                        # Fallback: use first few chunks if no relevant ones found
-                        if st.session_state.vector_store.chunks:
-                            context = "\n\n".join([chunk["content"] for chunk in st.session_state.vector_store.chunks[:3]])
-                            st.write("**Debug:** Поиск не дал результатов, использую первые фрагменты документа")
+                    if relevant_chunks:
+                        context = "\n\n".join([chunk["content"] for chunk in relevant_chunks])
+                        st.write(f"**Debug:** Используется {len(relevant_chunks)} релевантных фрагментов")
+                    else:
+                        # If no relevant chunks found, use top chunks without threshold
+                        st.write("**Debug:** Релевантные фрагменты не найдены, используем топ-3 по схожести")
+                        fallback_chunks = st.session_state.vector_store.search(prompt, k=3, score_threshold=0.0)
+                        if fallback_chunks:
+                            context = "\n\n".join([chunk["content"] for chunk in fallback_chunks])
+                            for i, chunk in enumerate(fallback_chunks[:2]):
+                                st.write(f"**Запасной фрагмент {i+1}** (Score: {chunk.get('score', 0):.3f}):")
+                                st.write(f"```\n{chunk['content'][:300]}...\n```")
                         else:
-                            context = "Документ не содержит доступного текста."
+                            context = "Не удалось найти релевантные фрагменты в документе."
                     
                     # Show context length
                     st.write(f"**Debug:** Размер контекста для модели: {len(context)} символов")
