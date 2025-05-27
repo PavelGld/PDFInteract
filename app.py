@@ -211,37 +211,9 @@ with st.sidebar:
                         if 'tmp_file_path' in locals():
                             os.unlink(tmp_file_path)
     
-    # Main content area - side by side: Chat left, PDF right
+    # Main content area with tabs instead of columns
     if st.session_state.pdf_processed and st.session_state.pdf_name:
         st.success(f"📚 **Current PDF:** {st.session_state.pdf_name}")
-        
-        # Create two equal columns for chat and PDF
-        chat_col, pdf_col = st.columns([1, 1], gap="medium")
-        
-        with chat_col:
-            st.markdown("### 💬 Chat with PDF")
-            
-            # Show PDF stats only in debug mode
-            if st.session_state.get('debug_mode', False) and st.session_state.pdf_content:
-                word_count = len(st.session_state.pdf_content.split())
-                char_count = len(st.session_state.pdf_content)
-                st.info(f"📊 **Stats:** {word_count:,} words, {char_count:,} characters")
-        
-        with pdf_col:
-            st.markdown("### 📄 PDF Document")
-            
-            # PDF viewer in right column
-            if st.session_state.get('pdf_base64'):
-                pdf_display = f"""
-                <iframe src="data:application/pdf;base64,{st.session_state.pdf_base64}" 
-                        width="100%" height="700px" style="border: 1px solid #ddd; border-radius: 8px;">
-                    <p>Your browser doesn't support PDF viewing. 
-                    <a href="data:application/pdf;base64,{st.session_state.pdf_base64}">Download the PDF</a> to view it.</p>
-                </iframe>
-                """
-                st.markdown(pdf_display, unsafe_allow_html=True)
-            else:
-                st.info("PDF content will appear here after upload")
     
     # Clear conversation button
     if st.session_state.messages:
@@ -257,96 +229,123 @@ st.markdown("Upload a PDF document and start an interactive conversation about i
 if not st.session_state.pdf_processed:
     st.info("👈 Please upload a PDF file from the sidebar to start chatting.")
 else:
-    # Chat interface
-    st.subheader("💬 Chat with your PDF")
+    # Create tabs for main interface
+    chat_tab, pdf_tab = st.tabs(["💬 Chat with PDF", "📄 View PDF"])
     
-    # Display chat messages
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    with pdf_tab:
+        st.markdown("### PDF Document")
+        if st.session_state.get('pdf_base64'):
+            # Show PDF stats only in debug mode
+            if st.session_state.get('debug_mode', False) and st.session_state.pdf_content:
+                word_count = len(st.session_state.pdf_content.split())
+                char_count = len(st.session_state.pdf_content)
+                st.info(f"📊 **Stats:** {word_count:,} words, {char_count:,} characters")
+            
+            pdf_display = f"""
+            <iframe src="data:application/pdf;base64,{st.session_state.pdf_base64}" 
+                    width="100%" height="800px" style="border: 1px solid #ddd; border-radius: 8px;">
+                <p>Your browser doesn't support PDF viewing. 
+                <a href="data:application/pdf;base64,{st.session_state.pdf_base64}">Download the PDF</a> to view it.</p>
+            </iframe>
+            """
+            st.markdown(pdf_display, unsafe_allow_html=True)
+        else:
+            st.info("PDF content will appear here after upload")
     
-    # Chat input
-    if prompt := st.chat_input("Ask a question about your PDF..."):
-        # Add user message to chat history
-        st.session_state.messages.append({"role": "user", "content": prompt})
+    with chat_tab:
+        st.markdown("### Chat Interface")
         
-        # Display user message
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        # Display chat messages
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
         
-        # Generate and display assistant response
-        with st.chat_message("assistant"):
-            with st.spinner("🤔 Thinking..."):
-                try:
-                    # Search for relevant chunks using LangChain FAISS
-                    relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.5)
-                    
-                    # Debug information - show only if debug mode is enabled
-                    if st.session_state.get('debug_mode', False):
-                        stats = st.session_state.vector_store.get_stats()
-                        total_chunks = stats.get('total_chunks', 0)
-                        total_docs = stats.get('total_documents', 0)
-                        vectorstore_active = stats.get('vectorstore_active', False)
+        # Chat input
+        if prompt := st.chat_input("Ask a question about your PDF..."):
+            # Add user message to chat history
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            
+            # Display user message
+            with st.chat_message("user"):
+                st.markdown(prompt)
+            
+            # Generate and display assistant response
+            with st.chat_message("assistant"):
+                with st.spinner("🤔 Thinking..."):
+                    try:
+                        # Search for relevant chunks using LangChain FAISS
+                        relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.5)
                         
-                        st.write(f"**Debug:** Всего фрагментов: {total_chunks}, документов: {total_docs}")
-                        st.write(f"**Debug:** Векторное хранилище: {'Активно' if vectorstore_active else 'Неактивно'}")
-                        st.write(f"**Debug:** Найдено {len(relevant_chunks)} релевантных фрагментов")
+                        # Debug information - show only if debug mode is enabled
+                        if st.session_state.get('debug_mode', False):
+                            stats = st.session_state.vector_store.get_stats()
+                            total_chunks = stats.get('total_chunks', 0)
+                            total_docs = stats.get('total_documents', 0)
+                            vectorstore_active = stats.get('vectorstore_active', False)
+                            
+                            st.write(f"**Debug:** Всего фрагментов: {total_chunks}, документов: {total_docs}")
+                            st.write(f"**Debug:** Векторное хранилище: {'Активно' if vectorstore_active else 'Неактивно'}")
+                            st.write(f"**Debug:** Найдено {len(relevant_chunks)} релевантных фрагментов")
+                            
+                            if relevant_chunks:
+                                st.write("**Найденные релевантные фрагменты:**")
+                                for i, chunk in enumerate(relevant_chunks[:2]):
+                                    st.write(f"**Фрагмент {i+1}** (Similarity: {chunk.get('score', 0):.3f}, Distance: {chunk.get('distance', 0):.3f}):")
+                                    st.write(f"```\n{chunk['content'][:400]}...\n```")
                         
+                        # Prepare context from relevant chunks
                         if relevant_chunks:
-                            st.write("**Найденные релевантные фрагменты:**")
-                            for i, chunk in enumerate(relevant_chunks[:2]):
-                                st.write(f"**Фрагмент {i+1}** (Similarity: {chunk.get('score', 0):.3f}, Distance: {chunk.get('distance', 0):.3f}):")
-                                st.write(f"```\n{chunk['content'][:400]}...\n```")
-                    
-                    # Prepare context from relevant chunks
-                    if relevant_chunks:
-                        context = "\n\n".join([chunk["content"] for chunk in relevant_chunks])
-                        if st.session_state.get('debug_mode', False):
-                            st.write(f"**Debug:** Используется {len(relevant_chunks)} релевантных фрагментов")
-                    else:
-                        # If no relevant chunks found, use lower threshold
-                        if st.session_state.get('debug_mode', False):
-                            st.write("**Debug:** Снижаем порог поиска...")
-                        fallback_chunks = st.session_state.vector_store.search(prompt, k=3, score_threshold=0.1)
-                        if fallback_chunks:
-                            context = "\n\n".join([chunk["content"] for chunk in fallback_chunks])
+                            context = "\n\n".join([chunk["content"] for chunk in relevant_chunks])
                             if st.session_state.get('debug_mode', False):
-                                for i, chunk in enumerate(fallback_chunks[:2]):
-                                    st.write(f"**Запасной фрагмент {i+1}** (Score: {chunk.get('score', 0):.3f}):")
-                                    st.write(f"```\n{chunk['content'][:300]}...\n```")
+                                st.write(f"**Debug:** Используется {len(relevant_chunks)} релевантных фрагментов")
                         else:
-                            # Final fallback
-                            context = "\n\n".join([chunk["content"] for chunk in st.session_state.vector_store.chunks[:3]])
+                            # If no relevant chunks found, use lower threshold
                             if st.session_state.get('debug_mode', False):
-                                st.write("**Debug:** Используем первые фрагменты документа")
-                    
-                    # Show context length only in debug mode
-                    if st.session_state.get('debug_mode', False):
-                        st.write(f"**Debug:** Размер контекста: {len(context)} символов")
-                    
-                    # Get response from OpenRouter
-                    response = openrouter_client.get_response(
-                        messages=st.session_state.messages[:-1],  # Exclude the current question
-                        question=prompt,
-                        context=context,
-                        model=st.session_state.selected_model
-                    )
-                    
-                    # Display response
-                    st.markdown(response)
-                    
-                    # Add assistant response to chat history
-                    st.session_state.messages.append({"role": "assistant", "content": response})
-                    
-                    # Show source information
-                    if relevant_chunks:
-                        with st.expander("📖 Source Information", expanded=False):
-                            st.write("**Relevant sections from your PDF:**")
-                            for i, chunk in enumerate(relevant_chunks[:3], 1):
-                                with st.container():
-                                    st.write(f"**Section {i}** (Similarity: {chunk['score']:.3f})")
-                                    st.write(chunk["content"][:300] + "..." if len(chunk["content"]) > 300 else chunk["content"])
+                                st.write("**Debug:** Снижаем порог поиска...")
+                            fallback_chunks = st.session_state.vector_store.search(prompt, k=3, score_threshold=0.1)
+                            if fallback_chunks:
+                                context = "\n\n".join([chunk["content"] for chunk in fallback_chunks])
+                                if st.session_state.get('debug_mode', False):
+                                    for i, chunk in enumerate(fallback_chunks[:2]):
+                                        st.write(f"**Запасной фрагмент {i+1}** (Score: {chunk.get('score', 0):.3f}):")
+                                        st.write(f"```\n{chunk['content'][:300]}...\n```")
+                            else:
+                                # Final fallback
+                                context = "\n\n".join([chunk["content"] for chunk in st.session_state.vector_store.chunks[:3]])
+                                if st.session_state.get('debug_mode', False):
+                                    st.write("**Debug:** Используем первые фрагменты документа")
+                        
+                        # Show context length only in debug mode
+                        if st.session_state.get('debug_mode', False):
+                            st.write(f"**Debug:** Размер контекста: {len(context)} символов")
+                        
+                        # Get response from OpenRouter
+                        response = openrouter_client.get_response(
+                            messages=st.session_state.messages[:-1],  # Exclude the current question
+                            question=prompt,
+                            context=context,
+                            model=st.session_state.selected_model
+                        )
+                        
+                        # Display response
+                        st.markdown(response)
+                        
+                        # Add assistant response to chat history
+                        st.session_state.messages.append({"role": "assistant", "content": response})
+                        
+                        # Show source information
+                        if relevant_chunks:
+                            with st.expander("📖 Source Information", expanded=False):
+                                st.write("**Relevant sections from your PDF:**")
+                                for i, chunk in enumerate(relevant_chunks[:3], 1):
+                                    st.write(f"**Section {i}** (Relevance: {chunk.get('score', 0):.2f})")
+                                    st.write(chunk['content'][:500] + ("..." if len(chunk['content']) > 500 else ""))
                                     st.divider()
+                    
+                    except Exception as e:
+                        error_msg = f"❌ Error generating response: {str(e)}"
+                        st.error(error_msg)
+                        st.session_state.messages.append({"role": "assistant", "content": error_msg})
                 
                 except Exception as e:
                     error_msg = f"❌ Error generating response: {str(e)}"
