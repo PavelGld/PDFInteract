@@ -211,37 +211,37 @@ with st.sidebar:
                         if 'tmp_file_path' in locals():
                             os.unlink(tmp_file_path)
     
-    # Main content area - side by side layout
+    # Main content area - tabs layout for full screen PDF
     if st.session_state.pdf_processed and st.session_state.pdf_name:
         st.success(f"📚 **Current PDF:** {st.session_state.pdf_name}")
         
-        # Create wider left column for PDF (40%) and narrower right for chat (60%)
-        pdf_col, chat_col = st.columns([2, 3], gap="large")
+        # Create tabs for PDF viewing and chat
+        tab1, tab2 = st.tabs(["💬 Chat with PDF", "📄 View PDF"])
         
-        with pdf_col:
-            st.markdown("#### 📄 PDF Viewer")
+        with tab1:
+            st.markdown("### Chat Interface")
             
-            # PDF viewer with maximum width usage
+            # Show PDF stats only in debug mode in chat tab
+            if st.session_state.get('debug_mode', False) and st.session_state.pdf_content:
+                word_count = len(st.session_state.pdf_content.split())
+                char_count = len(st.session_state.pdf_content)
+                st.info(f"📊 **Stats:** {word_count:,} words, {char_count:,} characters")
+        
+        with tab2:
+            st.markdown("### PDF Document")
+            
+            # PDF viewer with full screen width
             if st.session_state.get('pdf_base64'):
                 pdf_display = f"""
                 <iframe src="data:application/pdf;base64,{st.session_state.pdf_base64}" 
-                        width="100%" height="750px" style="border: 1px solid #ddd; border-radius: 8px;">
+                        width="100%" height="850px" style="border: 1px solid #ddd; border-radius: 8px;">
                     <p>Your browser doesn't support PDF viewing. 
                     <a href="data:application/pdf;base64,{st.session_state.pdf_base64}">Download the PDF</a> to view it.</p>
                 </iframe>
                 """
                 st.markdown(pdf_display, unsafe_allow_html=True)
-                
-                # Show PDF stats only in debug mode
-                if st.session_state.get('debug_mode', False) and st.session_state.pdf_content:
-                    word_count = len(st.session_state.pdf_content.split())
-                    char_count = len(st.session_state.pdf_content)
-                    st.info(f"📊 **Stats:** {word_count:,} words, {char_count:,} characters")
             else:
                 st.info("PDF content will appear here after upload")
-        
-        with chat_col:
-            st.markdown("#### 💬 Chat with PDF")
     
     # Clear conversation button
     if st.session_state.messages:
