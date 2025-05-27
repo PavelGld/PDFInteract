@@ -81,6 +81,68 @@ with st.sidebar:
     
     st.session_state.selected_model = model_options[selected_model]
     
+    st.divider()
+    
+    # Settings section
+    st.header("⚙️ Settings")
+    
+    # Debug mode toggle
+    debug_mode = st.checkbox(
+        "Show debug information", 
+        value=st.session_state.get('debug_mode', False),
+        help="Display technical details about document processing and search results"
+    )
+    st.session_state.debug_mode = debug_mode
+    
+    # Chat export/import
+    st.header("💾 Chat History")
+    
+    # Download chat history
+    if st.session_state.messages and len(st.session_state.messages) > 0:
+        chat_history = []
+        for msg in st.session_state.messages:
+            chat_history.append(f"{msg['role'].title()}: {msg['content']}")
+        
+        chat_text = "\n\n".join(chat_history)
+        st.download_button(
+            label="📥 Download Chat History",
+            data=chat_text,
+            file_name=f"chat_history_{st.session_state.pdf_name or 'session'}.txt",
+            mime="text/plain",
+            help="Download the conversation as a text file"
+        )
+    
+    # Upload chat history
+    uploaded_chat = st.file_uploader(
+        "📤 Upload Chat History",
+        type="txt",
+        help="Upload a previously saved chat history",
+        key="chat_upload"
+    )
+    
+    if uploaded_chat is not None:
+        try:
+            chat_content = uploaded_chat.read().decode('utf-8')
+            # Parse chat history
+            lines = chat_content.split('\n\n')
+            imported_messages = []
+            
+            for line in lines:
+                if line.strip():
+                    if line.startswith('User: '):
+                        imported_messages.append({"role": "user", "content": line[6:]})
+                    elif line.startswith('Assistant: '):
+                        imported_messages.append({"role": "assistant", "content": line[11:]})
+            
+            if imported_messages:
+                st.session_state.messages = imported_messages
+                st.success(f"✅ Imported {len(imported_messages)} messages")
+                st.rerun()
+        except Exception as e:
+            st.error(f"❌ Error importing chat: {str(e)}")
+    
+    st.divider()
+    
     # File upload
     uploaded_file = st.file_uploader(
         "Choose a PDF file",
@@ -124,9 +186,13 @@ with st.sidebar:
                             vector_store = VectorStore(api_key=api_key)
                             vector_store.add_chunks(chunks)
                             
+                            # Store PDF as base64 for viewer
+                            pdf_base64 = base64.b64encode(uploaded_file.getvalue()).decode('utf-8')
+                            
                             st.session_state.vector_store = vector_store
                             st.session_state.pdf_content = text_content
                             st.session_state.pdf_processed = True
+                            st.session_state.pdf_base64 = pdf_base64
                             
                             st.success(f"✅ PDF processed successfully! Found {len(chunks)} text chunks.")
                             
@@ -137,15 +203,37 @@ with st.sidebar:
                         if 'tmp_file_path' in locals():
                             os.unlink(tmp_file_path)
     
-    # PDF Info
+    # Main content area - split into columns for PDF viewer and chat
     if st.session_state.pdf_processed and st.session_state.pdf_name:
         st.success(f"📚 **Current PDF:** {st.session_state.pdf_name}")
         
-        # Show PDF stats
-        if st.session_state.pdf_content:
-            word_count = len(st.session_state.pdf_content.split())
-            char_count = len(st.session_state.pdf_content)
-            st.info(f"📊 **Stats:** {word_count:,} words, {char_count:,} characters")
+        # Create columns for PDF viewer and chat
+        col1, col2 = st.columns([1, 2])  # PDF takes 1/3, chat takes 2/3
+        
+        with col1:
+            st.subheader("📄 PDF Viewer")
+            
+            # Display PDF using embedded viewer
+            if st.session_state.get('pdf_base64'):
+                pdf_display = f"""
+                <iframe src="data:application/pdf;base64,{st.session_state.pdf_base64}" 
+                        width="100%" height="600px" type="application/pdf">
+                    <p>Your browser doesn't support PDF viewing. 
+                    <a href="data:application/pdf;base64,{st.session_state.pdf_base64}">Download the PDF</a> to view it.</p>
+                </iframe>
+                """
+                st.markdown(pdf_display, unsafe_allow_html=True)
+            else:
+                st.info("PDF content will appear here after upload")
+        
+        with col2:
+            st.subheader("💬 Chat with PDF")
+            
+            # Show PDF stats only in debug mode
+            if st.session_state.get('debug_mode', False) and st.session_state.pdf_content:
+                word_count = len(st.session_state.pdf_content.split())
+                char_count = len(st.session_state.pdf_content)
+                st.info(f"📊 **Stats:** {word_count:,} words, {char_count:,} characters")
     
     # Clear conversation button
     if st.session_state.messages:
