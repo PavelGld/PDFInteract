@@ -39,18 +39,24 @@ if "pdf_processed" not in st.session_state:
 if "vector_store" not in st.session_state:
     st.session_state.vector_store = None
 if "pdf_content" not in st.session_state:
-    st.session_state.pdf_content = None
+    st.session_state.pdf_content = ""
 if "pdf_name" not in st.session_state:
-    st.session_state.pdf_name = None
+    st.session_state.pdf_name = ""
+if "pdf_base64" not in st.session_state:
+    st.session_state.pdf_base64 = ""
+if "selected_model" not in st.session_state:
+    st.session_state.selected_model = "openai/gpt-3.5-turbo"
 
-# Initialize components
+# Helper functions
 @st.cache_resource
 def get_pdf_processor():
+    """Get cached PDF processor instance."""
     return PDFProcessor()
 
 @st.cache_resource
 def get_openrouter_client():
-    api_key = os.getenv("OPENROUTER_API_KEY", "")
+    """Get cached OpenRouter client instance."""
+    api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
         st.error("⚠️ OpenRouter API key not found. Please set OPENROUTER_API_KEY environment variable.")
         st.stop()
@@ -105,121 +111,84 @@ with st.sidebar:
     )
     st.session_state.debug_mode = debug_mode
     
-    st.divider()
-    
-    # Chat export/import
-    st.header("💾 Chat History")
-    
-    # Download chat history
-    if st.session_state.messages and len(st.session_state.messages) > 0:
-        chat_history = []
-        for msg in st.session_state.messages:
-            chat_history.append(f"{msg['role'].title()}: {msg['content']}")
+    # Chat history management
+    if st.session_state.messages:
+        st.divider()
+        st.header("💾 Chat History")
         
-        chat_text = "\n\n".join(chat_history)
-        st.download_button(
-            label="📥 Download Chat History",
-            data=chat_text,
-            file_name=f"chat_history_{st.session_state.pdf_name or 'session'}.txt",
-            mime="text/plain",
-            help="Download the conversation as a text file"
-        )
-    
-    # Upload chat history - fix infinite loading issue
-    uploaded_chat = st.file_uploader(
-        "📤 Upload Chat History",
-        type="txt",
-        help="Upload a previously saved chat history",
-        key="chat_upload"
-    )
-    
-    if uploaded_chat is not None and not st.session_state.get('chat_imported', False):
-        try:
-            chat_content = uploaded_chat.read().decode('utf-8')
-            # Parse chat history
-            lines = chat_content.split('\n\n')
-            imported_messages = []
+        # Export chat history
+        if st.button("📥 Export Chat", help="Download chat history as text"):
+            chat_text = ""
+            for msg in st.session_state.messages:
+                role = "User" if msg["role"] == "user" else "Assistant"
+                chat_text += f"{role}: {msg['content']}\n\n"
             
-            for line in lines:
-                if line.strip():
-                    if line.startswith('User: '):
-                        imported_messages.append({"role": "user", "content": line[6:]})
-                    elif line.startswith('Assistant: '):
-                        imported_messages.append({"role": "assistant", "content": line[11:]})
-            
-            if imported_messages:
-                st.session_state.messages = imported_messages
-                st.session_state.chat_imported = True
-                st.success(f"✅ Imported {len(imported_messages)} messages")
-                st.rerun()
-        except Exception as e:
-            st.error(f"❌ Error importing chat: {str(e)}")
+            st.download_button(
+                label="📄 Download Chat History",
+                data=chat_text,
+                file_name=f"chat_history_{st.session_state.pdf_name.replace('.pdf', '')}.txt",
+                mime="text/plain"
+            )
     
-    # Reset chat import flag when no file is uploaded
-    if uploaded_chat is None:
-        st.session_state.chat_imported = False
-    
+    # Process uploaded file
     if uploaded_file is not None:
-        # Validate file
-        is_valid, error_message = validate_pdf_file(uploaded_file)
-        
-        if not is_valid:
-            st.error(f"❌ {error_message}")
-        else:
-            # Check if this is a new file
-            if st.session_state.pdf_name != uploaded_file.name:
-                st.session_state.pdf_name = uploaded_file.name
-                st.session_state.pdf_processed = False
-                st.session_state.messages = []
-                st.session_state.vector_store = None
-                
-                with st.spinner("🔄 Processing PDF..."):
-                    try:
-                        # Save uploaded file temporarily
+        if uploaded_file.name != st.session_state.pdf_name:
+            with st.spinner("🔄 Processing PDF..."):
+                try:
+                    # Validate file
+                    is_valid, error_msg = validate_pdf_file(uploaded_file)
+                    if not is_valid:
+                        st.error(f"❌ {error_msg}")
+                    else:
+                        # Create temporary file
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
                             tmp_file.write(uploaded_file.getvalue())
                             tmp_file_path = tmp_file.name
                         
-                        # Extract text from PDF
+                        # Extract text
                         text_content = pdf_processor.extract_text(tmp_file_path)
                         
                         if not text_content.strip():
-                            st.error("❌ No text content found in the PDF. Please ensure the PDF contains readable text.")
+                            st.error("❌ Could not extract text from PDF. The file might be image-based or corrupted.")
                         else:
                             # Create chunks
                             chunks = pdf_processor.create_chunks(text_content)
                             
-                            # Create vector store with API embeddings
-                            api_key = os.getenv("OPENROUTER_API_KEY", "")
-                            vector_store = VectorStore(api_key=api_key)
+                            # Create vector store with Course API
+                            course_api_key = os.environ.get("COURSE_API_KEY")
+                            if not course_api_key:
+                                st.error("⚠️ Course API key not found. Please set COURSE_API_KEY environment variable.")
+                                st.stop()
+                            
+                            vector_store = VectorStore(course_api_key)
                             vector_store.add_chunks(chunks)
                             
-                            # Store PDF as base64 for viewer
-                            pdf_base64 = base64.b64encode(uploaded_file.getvalue()).decode('utf-8')
+                            # Store PDF as base64 for viewing
+                            pdf_base64 = base64.b64encode(uploaded_file.getvalue()).decode()
                             
+                            # Update session state
+                            st.session_state.pdf_processed = True
                             st.session_state.vector_store = vector_store
                             st.session_state.pdf_content = text_content
-                            st.session_state.pdf_processed = True
+                            st.session_state.pdf_name = uploaded_file.name
                             st.session_state.pdf_base64 = pdf_base64
+                            st.session_state.messages = []  # Clear previous chat
                             
-                            st.success(f"✅ PDF processed successfully! Found {len(chunks)} text chunks.")
-                            
-                    except Exception as e:
-                        st.error(f"❌ Error processing PDF: {str(e)}")
-                    finally:
-                        # Clean up temporary file
-                        if 'tmp_file_path' in locals():
-                            os.unlink(tmp_file_path)
-    
-    # Main content area with tabs instead of columns
-    if st.session_state.pdf_processed and st.session_state.pdf_name:
-        st.success(f"📚 **Current PDF:** {st.session_state.pdf_name}")
-    
-    # Clear conversation button
-    if st.session_state.messages:
-        if st.button("🗑️ Clear Conversation", type="secondary"):
-            st.session_state.messages = []
-            st.rerun()
+                            st.success(f"✅ Successfully processed {len(chunks)} text chunks using Course API")
+                            st.rerun()
+                        
+                except Exception as e:
+                    st.error(f"❌ Error processing PDF: {str(e)}")
+                finally:
+                    # Clean up temporary file
+                    if 'tmp_file_path' in locals():
+                        os.unlink(tmp_file_path)
+
+# Clear conversation button
+if st.session_state.messages:
+    if st.button("🗑️ Clear Conversation", type="secondary"):
+        st.session_state.messages = []
+        st.rerun()
 
 # Main content area
 st.title("📚 PDF Chat Assistant")
@@ -273,84 +242,50 @@ else:
             with st.chat_message("assistant"):
                 with st.spinner("🤔 Thinking..."):
                     try:
-                        # Search for relevant chunks using LangChain FAISS
+                        # Search for relevant chunks
                         relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.5)
                         
                         # Debug information - show only if debug mode is enabled
                         if st.session_state.get('debug_mode', False):
                             stats = st.session_state.vector_store.get_stats()
                             total_chunks = stats.get('total_chunks', 0)
-                            total_docs = stats.get('total_documents', 0)
-                            vectorstore_active = stats.get('vectorstore_active', False)
-                            
-                            st.write(f"**Debug:** Всего фрагментов: {total_chunks}, документов: {total_docs}")
-                            st.write(f"**Debug:** Векторное хранилище: {'Активно' if vectorstore_active else 'Неактивно'}")
-                            st.write(f"**Debug:** Найдено {len(relevant_chunks)} релевантных фрагментов")
+                            st.info(f"🔍 **Search Results:** Found {len(relevant_chunks)} relevant chunks from {total_chunks} total chunks")
                             
                             if relevant_chunks:
-                                st.write("**Найденные релевантные фрагменты:**")
-                                for i, chunk in enumerate(relevant_chunks[:2]):
-                                    st.write(f"**Фрагмент {i+1}** (Similarity: {chunk.get('score', 0):.3f}, Distance: {chunk.get('distance', 0):.3f}):")
-                                    st.write(f"```\n{chunk['content'][:400]}...\n```")
+                                with st.expander("📄 View Retrieved Context", expanded=False):
+                                    for i, chunk in enumerate(relevant_chunks[:3]):  # Show top 3
+                                        st.write(f"**Chunk {i+1}** (Score: {chunk.get('score', 0):.3f})")
+                                        st.write(chunk.get('content', '')[:300] + "...")
+                                        st.divider()
                         
-                        # Prepare context from relevant chunks
                         if relevant_chunks:
-                            context = "\n\n".join([chunk["content"] for chunk in relevant_chunks])
-                            if st.session_state.get('debug_mode', False):
-                                st.write(f"**Debug:** Используется {len(relevant_chunks)} релевантных фрагментов")
+                            # Combine contexts
+                            context = "\n\n".join([chunk['content'] for chunk in relevant_chunks])
+                            
+                            # Get response from OpenRouter
+                            response = openrouter_client.get_response(
+                                messages=st.session_state.messages[:-1],  # Exclude current message
+                                question=prompt,
+                                context=context,
+                                model=st.session_state.selected_model,
+                                max_tokens=1000,
+                                temperature=0.7
+                            )
+                            
+                            st.markdown(response)
+                            
+                            # Add assistant response to chat history
+                            st.session_state.messages.append({"role": "assistant", "content": response})
                         else:
-                            # If no relevant chunks found, use lower threshold
-                            if st.session_state.get('debug_mode', False):
-                                st.write("**Debug:** Снижаем порог поиска...")
-                            fallback_chunks = st.session_state.vector_store.search(prompt, k=3, score_threshold=0.1)
-                            if fallback_chunks:
-                                context = "\n\n".join([chunk["content"] for chunk in fallback_chunks])
-                                if st.session_state.get('debug_mode', False):
-                                    for i, chunk in enumerate(fallback_chunks[:2]):
-                                        st.write(f"**Запасной фрагмент {i+1}** (Score: {chunk.get('score', 0):.3f}):")
-                                        st.write(f"```\n{chunk['content'][:300]}...\n```")
-                            else:
-                                # Final fallback
-                                context = "\n\n".join([chunk["content"] for chunk in st.session_state.vector_store.chunks[:3]])
-                                if st.session_state.get('debug_mode', False):
-                                    st.write("**Debug:** Используем первые фрагменты документа")
-                        
-                        # Show context length only in debug mode
-                        if st.session_state.get('debug_mode', False):
-                            st.write(f"**Debug:** Размер контекста: {len(context)} символов")
-                        
-                        # Get response from OpenRouter
-                        response = openrouter_client.get_response(
-                            messages=st.session_state.messages[:-1],  # Exclude the current question
-                            question=prompt,
-                            context=context,
-                            model=st.session_state.selected_model
-                        )
-                        
-                        # Display response
-                        st.markdown(response)
-                        
-                        # Add assistant response to chat history
-                        st.session_state.messages.append({"role": "assistant", "content": response})
-                        
-                        # Show source information
-                        if relevant_chunks:
-                            with st.expander("📖 Source Information", expanded=False):
-                                st.write("**Relevant sections from your PDF:**")
-                                for i, chunk in enumerate(relevant_chunks[:3], 1):
-                                    st.write(f"**Section {i}** (Relevance: {chunk.get('score', 0):.2f})")
-                                    st.write(chunk['content'][:500] + ("..." if len(chunk['content']) > 500 else ""))
-                                    st.divider()
-                    
+                            # No relevant context found
+                            response = "I couldn't find relevant information in the document to answer your question. Could you try rephrasing your question or ask about something more specific from the PDF content?"
+                            st.markdown(response)
+                            st.session_state.messages.append({"role": "assistant", "content": response})
+                            
                     except Exception as e:
                         error_msg = f"❌ Error generating response: {str(e)}"
                         st.error(error_msg)
                         st.session_state.messages.append({"role": "assistant", "content": error_msg})
-                
-                except Exception as e:
-                    error_msg = f"❌ Error generating response: {str(e)}"
-                    st.error(error_msg)
-                    st.session_state.messages.append({"role": "assistant", "content": error_msg})
 
 # Footer
 st.markdown("---")
