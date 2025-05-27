@@ -117,18 +117,56 @@ with st.sidebar:
         st.header("💾 Chat History")
         
         # Export chat history
-        if st.button("📥 Export Chat", help="Download chat history as text"):
-            chat_text = ""
-            for msg in st.session_state.messages:
-                role = "User" if msg["role"] == "user" else "Assistant"
-                chat_text += f"{role}: {msg['content']}\n\n"
-            
-            st.download_button(
-                label="📄 Download Chat History",
-                data=chat_text,
-                file_name=f"chat_history_{st.session_state.pdf_name.replace('.pdf', '')}.txt",
-                mime="text/plain"
-            )
+        chat_text = ""
+        for msg in st.session_state.messages:
+            role = "User" if msg["role"] == "user" else "Assistant"
+            chat_text += f"{role}: {msg['content']}\n\n"
+        
+        st.download_button(
+            label="📥 Download Chat History",
+            data=chat_text,
+            file_name=f"chat_history_{st.session_state.pdf_name.replace('.pdf', '')}.txt",
+            mime="text/plain",
+            help="Download chat history as text file"
+        )
+        
+        # Import chat history
+        st.markdown("**Import Chat History:**")
+        uploaded_chat = st.file_uploader(
+            "Upload previous chat history",
+            type="txt",
+            help="Upload a previously exported chat history file",
+            key="chat_upload"
+        )
+        
+        if uploaded_chat is not None:
+            try:
+                # Read the uploaded file
+                chat_content = uploaded_chat.read().decode("utf-8")
+                
+                # Parse the chat content
+                new_messages = []
+                lines = chat_content.strip().split('\n\n')
+                
+                for line in lines:
+                    if line.strip():
+                        if line.startswith("User: "):
+                            content = line[6:]  # Remove "User: "
+                            new_messages.append({"role": "user", "content": content})
+                        elif line.startswith("Assistant: "):
+                            content = line[11:]  # Remove "Assistant: "
+                            new_messages.append({"role": "assistant", "content": content})
+                
+                if new_messages:
+                    if st.button("📤 Import Chat", help="Replace current chat with imported history"):
+                        st.session_state.messages = new_messages
+                        st.success(f"✅ Imported {len(new_messages)} messages successfully!")
+                        st.rerun()
+                    
+                    st.info(f"📋 Preview: Found {len(new_messages)} messages in the file")
+                
+            except Exception as e:
+                st.error(f"❌ Error reading chat file: {str(e)}")
     
     # Process uploaded file
     if uploaded_file is not None:
