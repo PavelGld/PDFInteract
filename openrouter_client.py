@@ -1,3 +1,16 @@
+"""
+OpenRouter API Client для PDF Chat Assistant
+
+Клиент для интеграции с OpenRouter API для генерации ответов от различных LLM моделей.
+Поддерживает множественные модели и создание контекстных промптов с RAG.
+
+Основные функции:
+- Интеграция с OpenRouter API
+- Поддержка множественных LLM моделей
+- Создание контекстных промптов с найденными фрагментами
+- Управление токенами и ограничениями API
+"""
+
 import requests
 import json
 from typing import List, Dict, Any, Optional
