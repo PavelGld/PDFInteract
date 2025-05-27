@@ -2,7 +2,7 @@ import numpy as np
 from typing import List, Dict, Any
 import os
 from sklearn.metrics.pairwise import cosine_similarity
-from utils import OpenAIEmbeddings
+from utils2 import OpenAIEmbeddings
 
 class VectorStore:
     def __init__(self, api_key: str):
