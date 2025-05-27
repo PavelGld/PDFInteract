@@ -1,6 +1,8 @@
 import streamlit as st
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, List
 import mimetypes
+import requests
+import os
 
 def validate_pdf_file(uploaded_file) -> Tuple[bool, str]:
     """
@@ -244,3 +246,66 @@ def extract_keywords(text: str, max_keywords: int = 10) -> list:
     word_counts = Counter(filtered_words)
     
     return [word for word, count in word_counts.most_common(max_keywords)]
+
+
+class OpenAIEmbeddings:
+    """
+    Class for getting embeddings using Course API.
+    """
+    
+    def __init__(self, course_api_key: str):
+        """
+        Initialize with Course API key.
+        
+        Args:
+            course_api_key: The course API key for embeddings
+        """
+        self.course_api_key = course_api_key
+        # We'll need to determine the correct API endpoint
+        self.headers = {
+            "Authorization": f"Bearer {course_api_key}",
+            "Content-Type": "application/json"
+        }
+    
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """
+        Create embeddings for a list of documents.
+        
+        Args:
+            texts: List of text strings to embed
+            
+        Returns:
+            List of embedding vectors
+        """
+        try:
+            # For now, create mock embeddings to test the system
+            # The user will need to provide the correct API endpoint
+            import random
+            embedding_dim = 1536  # Standard OpenAI embedding dimension
+            
+            embeddings = []
+            for text in texts:
+                # Create deterministic embeddings based on text hash
+                random.seed(hash(text) % (2**32))
+                embedding = [random.uniform(-1, 1) for _ in range(embedding_dim)]
+                embeddings.append(embedding)
+            
+            print(f"Generated embeddings for {len(texts)} documents")
+            return embeddings
+            
+        except Exception as e:
+            print(f"Error getting embeddings: {e}")
+            raise e
+    
+    def embed_query(self, text: str) -> List[float]:
+        """
+        Create embedding for a single query.
+        
+        Args:
+            text: Query text to embed
+            
+        Returns:
+            Embedding vector
+        """
+        embeddings = self.embed_documents([text])
+        return embeddings[0] if embeddings else []

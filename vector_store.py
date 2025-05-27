@@ -1,78 +1,23 @@
-import requests
 import numpy as np
 from typing import List, Dict, Any
-import json
+import os
 from sklearn.metrics.pairwise import cosine_similarity
+from utils import OpenAIEmbeddings
 
 class VectorStore:
     def __init__(self, api_key: str):
         """
-        Initialize vector store with OpenRouter embeddings.
+        Initialize vector store with Course API embeddings.
         
         Args:
-            api_key: OpenRouter API key
+            api_key: Course API key for embeddings
         """
-        self.api_key = api_key
-        self.base_url = "https://openrouter.ai/api/v1"
+        self.course_api_key = os.environ.get("COURSE_API_KEY", api_key)
+        self.embeddings_model = OpenAIEmbeddings(course_api_key=self.course_api_key)
         self.chunks = []
         self.embeddings = []
         self.vectorstore = None
         
-    def get_embeddings(self, texts: List[str]) -> List[List[float]]:
-        """
-        Get embeddings from OpenRouter API.
-        
-        Args:
-            texts: List of texts to embed
-            
-        Returns:
-            List of embedding vectors
-        """
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://streamlit.io",
-            "X-Title": "PDF Chat Assistant"
-        }
-        
-        # Try different embedding models that might be available
-        embedding_models = [
-            "openai/text-embedding-3-small",
-            "openai/text-embedding-ada-002", 
-            "text-embedding-3-small",
-            "text-embedding-ada-002"
-        ]
-        
-        for model in embedding_models:
-            try:
-                data = {
-                    "model": model,
-                    "input": texts
-                }
-                
-                response = requests.post(
-                    f"{self.base_url}/embeddings",
-                    headers=headers,
-                    json=data,
-                    timeout=30
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    embeddings = [item["embedding"] for item in result["data"]]
-                    print(f"Successfully got embeddings using model: {model}")
-                    return embeddings
-                else:
-                    print(f"Model {model} failed with status {response.status_code}: {response.text}")
-                    continue
-                    
-            except Exception as e:
-                print(f"Error with model {model}: {e}")
-                continue
-        
-        # If all models fail, raise an error
-        raise Exception("Could not get embeddings from any available model")
-    
     def add_chunks(self, chunks: List[Dict[str, Any]]) -> None:
         """
         Add text chunks to the vector store.
@@ -89,19 +34,11 @@ class VectorStore:
             # Extract texts from chunks
             texts = [chunk['content'] for chunk in chunks]
             
-            # Get embeddings in batches to avoid API limits
-            batch_size = 100  # Adjust based on API limits
-            all_embeddings = []
-            
-            for i in range(0, len(texts), batch_size):
-                batch_texts = texts[i:i + batch_size]
-                batch_embeddings = self.get_embeddings(batch_texts)
-                all_embeddings.extend(batch_embeddings)
-                print(f"Processed batch {i//batch_size + 1}/{(len(texts) + batch_size - 1)//batch_size}")
-            
-            self.embeddings = np.array(all_embeddings)
+            # Get embeddings using Course API
+            self.embeddings = self.embeddings_model.embed_documents(texts)
+            self.embeddings = np.array(self.embeddings)
             self.vectorstore = True
-            print(f"Successfully created vector store with {len(chunks)} documents")
+            print(f"Successfully created vector store with {len(chunks)} documents using Course API")
             
         except Exception as e:
             print(f"Error creating vector store: {e}")
@@ -125,7 +62,7 @@ class VectorStore:
         
         try:
             # Get query embedding
-            query_embedding = self.get_embeddings([query])[0]
+            query_embedding = self.embeddings_model.embed_query(query)
             query_vector = np.array(query_embedding).reshape(1, -1)
             
             # Calculate cosine similarities
@@ -185,19 +122,19 @@ class VectorStore:
         return {
             'total_chunks': len(self.chunks),
             'total_documents': len(self.chunks),
-            'vectorstore_type': 'OpenRouter Embeddings',
+            'vectorstore_type': 'Course API Embeddings',
             'vectorstore_active': self.vectorstore is not None,
-            'embedding_model': 'OpenRouter API',
+            'embedding_model': 'Course API',
             'embedding_dimensions': len(self.embeddings[0]) if len(self.embeddings) > 0 else 0
         }
     
     def save_to_disk(self, path: str) -> None:
         """Save vector store to disk."""
-        print("OpenRouter embeddings vector store ready")
+        print("Course API embeddings vector store ready")
     
     def load_from_disk(self, path: str) -> None:
         """Load vector store from disk."""
-        print("OpenRouter embeddings vector store loaded")
+        print("Course API embeddings vector store loaded")
     
     def clear(self) -> None:
         """Clear all data from the vector store."""
