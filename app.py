@@ -211,39 +211,37 @@ with st.sidebar:
                         if 'tmp_file_path' in locals():
                             os.unlink(tmp_file_path)
     
-    # Main content area - split into columns for PDF viewer and chat
+    # Main content area - side by side layout
     if st.session_state.pdf_processed and st.session_state.pdf_name:
         st.success(f"📚 **Current PDF:** {st.session_state.pdf_name}")
         
-        # Create columns for PDF viewer and chat with proper spacing
-        col1, col2 = st.columns([1, 2], gap="medium")  # PDF takes 1/3, chat takes 2/3
+        # Create wider left column for PDF (40%) and narrower right for chat (60%)
+        pdf_col, chat_col = st.columns([2, 3], gap="large")
         
-        with col1:
-            st.subheader("📄 PDF Viewer")
+        with pdf_col:
+            st.markdown("#### 📄 PDF Viewer")
             
-            # Display PDF using embedded viewer with full width
+            # PDF viewer with maximum width usage
             if st.session_state.get('pdf_base64'):
                 pdf_display = f"""
-                <div style="width: 100%; height: 700px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden;">
-                    <iframe src="data:application/pdf;base64,{st.session_state.pdf_base64}" 
-                            width="100%" height="100%" frameborder="0" style="border: none;">
-                        <p>Your browser doesn't support PDF viewing. 
-                        <a href="data:application/pdf;base64,{st.session_state.pdf_base64}">Download the PDF</a> to view it.</p>
-                    </iframe>
-                </div>
+                <iframe src="data:application/pdf;base64,{st.session_state.pdf_base64}" 
+                        width="100%" height="750px" style="border: 1px solid #ddd; border-radius: 8px;">
+                    <p>Your browser doesn't support PDF viewing. 
+                    <a href="data:application/pdf;base64,{st.session_state.pdf_base64}">Download the PDF</a> to view it.</p>
+                </iframe>
                 """
                 st.markdown(pdf_display, unsafe_allow_html=True)
+                
+                # Show PDF stats only in debug mode
+                if st.session_state.get('debug_mode', False) and st.session_state.pdf_content:
+                    word_count = len(st.session_state.pdf_content.split())
+                    char_count = len(st.session_state.pdf_content)
+                    st.info(f"📊 **Stats:** {word_count:,} words, {char_count:,} characters")
             else:
                 st.info("PDF content will appear here after upload")
         
-        with col2:
-            st.subheader("💬 Chat with PDF")
-            
-            # Show PDF stats only in debug mode
-            if st.session_state.get('debug_mode', False) and st.session_state.pdf_content:
-                word_count = len(st.session_state.pdf_content.split())
-                char_count = len(st.session_state.pdf_content)
-                st.info(f"📊 **Stats:** {word_count:,} words, {char_count:,} characters")
+        with chat_col:
+            st.markdown("#### 💬 Chat with PDF")
     
     # Clear conversation button
     if st.session_state.messages:
