@@ -168,21 +168,23 @@ else:
         with st.chat_message("assistant"):
             with st.spinner("🤔 Thinking..."):
                 try:
-                    # Search for relevant chunks using API embeddings
-                    relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.7)
+                    # Search for relevant chunks using LangChain FAISS
+                    relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.5)
                     
                     # Debug information
-                    total_chunks = len(st.session_state.vector_store.chunks) if st.session_state.vector_store.chunks else 0
-                    embeddings_count = len(st.session_state.vector_store.embeddings) if st.session_state.vector_store.embeddings else 0
+                    stats = st.session_state.vector_store.get_stats()
+                    total_chunks = stats.get('total_chunks', 0)
+                    total_docs = stats.get('total_documents', 0)
+                    vectorstore_active = stats.get('vectorstore_active', False)
                     
-                    st.write(f"**Debug:** Всего фрагментов в документе: {total_chunks}")
-                    st.write(f"**Debug:** Создано эмбеддингов: {embeddings_count}")
-                    st.write(f"**Debug:** Найдено {len(relevant_chunks)} релевантных фрагментов (API embeddings)")
+                    st.write(f"**Debug:** Всего фрагментов: {total_chunks}, документов: {total_docs}")
+                    st.write(f"**Debug:** FAISS векторное хранилище: {'Активно' if vectorstore_active else 'Неактивно'}")
+                    st.write(f"**Debug:** Найдено {len(relevant_chunks)} релевантных фрагментов (LangChain + FAISS)")
                     
                     if relevant_chunks:
                         st.write("**Найденные релевантные фрагменты:**")
                         for i, chunk in enumerate(relevant_chunks[:2]):
-                            st.write(f"**Фрагмент {i+1}** (Similarity: {chunk.get('score', 0):.3f}):")
+                            st.write(f"**Фрагмент {i+1}** (Similarity: {chunk.get('score', 0):.3f}, Distance: {chunk.get('distance', 0):.3f}):")
                             st.write(f"```\n{chunk['content'][:400]}...\n```")
                     
                     # Prepare context from relevant chunks
@@ -191,20 +193,20 @@ else:
                         st.write(f"**Debug:** Используется {len(relevant_chunks)} релевантных фрагментов")
                     else:
                         # If no relevant chunks found, use lower threshold
-                        st.write("**Debug:** Снижаем порог поиска для нахождения похожих фрагментов")
-                        fallback_chunks = st.session_state.vector_store.search(prompt, k=3, score_threshold=0.5)
+                        st.write("**Debug:** Снижаем порог поиска...")
+                        fallback_chunks = st.session_state.vector_store.search(prompt, k=3, score_threshold=0.1)
                         if fallback_chunks:
                             context = "\n\n".join([chunk["content"] for chunk in fallback_chunks])
                             for i, chunk in enumerate(fallback_chunks[:2]):
                                 st.write(f"**Запасной фрагмент {i+1}** (Score: {chunk.get('score', 0):.3f}):")
                                 st.write(f"```\n{chunk['content'][:300]}...\n```")
                         else:
-                            # Final fallback to top chunks
+                            # Final fallback
                             context = "\n\n".join([chunk["content"] for chunk in st.session_state.vector_store.chunks[:3]])
                             st.write("**Debug:** Используем первые фрагменты документа")
                     
                     # Show context length
-                    st.write(f"**Debug:** Размер контекста для модели: {len(context)} символов")
+                    st.write(f"**Debug:** Размер контекста: {len(context)} символов")
                     
                     # Get response from OpenRouter
                     response = openrouter_client.get_response(
