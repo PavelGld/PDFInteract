@@ -59,17 +59,17 @@ def get_pdf_processor():
     """Get PDF processor instance."""
     return PDFProcessor()
 
-@st.cache_resource
 def get_openrouter_client():
-    """Get cached OpenRouter client instance."""
+    """Get OpenRouter client instance."""
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
         st.error("⚠️ OpenRouter API key not found. Please set OPENROUTER_API_KEY environment variable.")
         st.stop()
     return OpenRouterClient(api_key)
 
-pdf_processor = get_pdf_processor()
-openrouter_client = get_openrouter_client()
+# Initialize clients without caching to ensure latest version
+pdf_processor = PDFProcessor()
+openrouter_client = OpenRouterClient(os.environ.get("OPENROUTER_API_KEY"))
 topic_extractor = TopicExtractor(openrouter_client)
 
 # Sidebar for PDF upload and settings
