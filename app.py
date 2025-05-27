@@ -55,9 +55,8 @@ if "document_summary" not in st.session_state:
     st.session_state.document_summary = ""
 
 # Helper functions
-@st.cache_resource
 def get_pdf_processor():
-    """Get cached PDF processor instance."""
+    """Get PDF processor instance."""
     return PDFProcessor()
 
 @st.cache_resource
@@ -90,15 +89,16 @@ with st.sidebar:
     # Model selection
     st.header("🤖 LLM Model")
     model_options = {
-        "GPT-4o": "openai/gpt-4o",
-        "GPT-4o Mini": "openai/gpt-4o-mini", 
-        "GPT-4 Turbo": "openai/gpt-4-turbo",
+        "GPT-4o 🖼️ (Vision)": "openai/gpt-4o",
+        "GPT-4o Mini 🖼️ (Vision)": "openai/gpt-4o-mini", 
+        "GPT-4 Turbo 🖼️ (Vision)": "openai/gpt-4-turbo",
         "GPT-3.5 Turbo": "openai/gpt-3.5-turbo",
-        "Claude 3.5 Sonnet": "anthropic/claude-3-5-sonnet-20241022",
-        "Claude 3 Opus": "anthropic/claude-3-opus-20240229",
-        "Claude 3 Haiku": "anthropic/claude-3-haiku-20240307",
-        "Gemini Pro 1.5": "google/gemini-pro-1.5",
-        "Gemini Flash 1.5": "google/gemini-flash-1.5",
+        "Claude 3.5 Sonnet 🖼️ (Vision)": "anthropic/claude-3-5-sonnet-20241022",
+        "Claude 3 Opus 🖼️ (Vision)": "anthropic/claude-3-opus-20240229",
+        "Claude 3 Haiku 🖼️ (Vision)": "anthropic/claude-3-haiku-20240307",
+        "Gemini Pro 1.5 🖼️ (Vision)": "google/gemini-pro-1.5",
+        "Gemini Flash 1.5 🖼️ (Vision)": "google/gemini-flash-1.5",
+        "Llama 3.2 90B Vision 🖼️": "meta-llama/llama-3.2-90b-vision-instruct",
         "Llama 3.1 405B": "meta-llama/llama-3.1-405b-instruct",
         "Llama 3.1 70B": "meta-llama/llama-3.1-70b-instruct",
         "Mixtral 8x7B": "mistralai/mixtral-8x7b-instruct",
@@ -109,8 +109,14 @@ with st.sidebar:
         "Select model:",
         options=list(model_options.keys()),
         index=0,
-        help="Choose the language model for processing your questions"
+        help="🖼️ Vision models can analyze images from PDFs"
     )
+    
+    # Show vision capability info
+    if "🖼️" in selected_model:
+        st.info("🖼️ Эта модель может анализировать изображения из PDF")
+    else:
+        st.warning("⚠️ Эта модель работает только с текстом")
     
     st.session_state.selected_model = model_options[selected_model]
     
