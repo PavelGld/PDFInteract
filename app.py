@@ -394,8 +394,12 @@ else:
                             images_data = None
                             if "🖼️" in st.session_state.get('selected_model', '') and st.session_state.get('document_images'):
                                 images_data = [img['data'] for img in st.session_state.document_images[:3]]  # Send first 3 images
+                                st.info(f"🖼️ Vision model detected! Sending {len(images_data)} images from PDF")
                                 if st.session_state.get('debug_mode', False):
-                                    st.info(f"🖼️ Sending {len(images_data)} images to vision model")
+                                    st.info(f"📸 Images available: {len(st.session_state.document_images)}")
+                                    st.info(f"🤖 Selected model: {st.session_state.selected_model}")
+                            elif "🖼️" in st.session_state.get('selected_model', ''):
+                                st.warning("🖼️ Vision model selected but no images found in PDF")
                             
                             # Get response from OpenRouter
                             response = openrouter_client.get_response(
