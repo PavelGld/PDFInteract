@@ -111,26 +111,29 @@ with st.sidebar:
     )
     st.session_state.debug_mode = debug_mode
     
-    # Chat history management
-    if st.session_state.messages:
+    # Chat history management - show when PDF is processed
+    if st.session_state.pdf_processed:
         st.divider()
         st.header("💾 Chat History")
         
-        # Export chat history
-        chat_text = ""
-        for msg in st.session_state.messages:
-            role = "User" if msg["role"] == "user" else "Assistant"
-            chat_text += f"{role}: {msg['content']}\n\n"
+        # Export chat history (always available)
+        if st.session_state.messages:
+            chat_text = ""
+            for msg in st.session_state.messages:
+                role = "User" if msg["role"] == "user" else "Assistant"
+                chat_text += f"{role}: {msg['content']}\n\n"
+            
+            st.download_button(
+                label="📥 Download Chat History",
+                data=chat_text,
+                file_name=f"chat_history_{st.session_state.pdf_name.replace('.pdf', '')}.txt",
+                mime="text/plain",
+                help="Download chat history as text file"
+            )
+        else:
+            st.info("💬 Start chatting to enable download")
         
-        st.download_button(
-            label="📥 Download Chat History",
-            data=chat_text,
-            file_name=f"chat_history_{st.session_state.pdf_name.replace('.pdf', '')}.txt",
-            mime="text/plain",
-            help="Download chat history as text file"
-        )
-        
-        # Import chat history
+        # Import chat history (always available)
         st.markdown("**Import Chat History:**")
         uploaded_chat = st.file_uploader(
             "Upload previous chat history",
@@ -167,6 +170,13 @@ with st.sidebar:
                 
             except Exception as e:
                 st.error(f"❌ Error reading chat file: {str(e)}")
+        
+        # Clear chat button
+        if st.session_state.messages:
+            if st.button("🗑️ Clear Chat", help="Clear all chat messages"):
+                st.session_state.messages = []
+                st.success("✅ Chat cleared!")
+                st.rerun()
     
     # Process uploaded file
     if uploaded_file is not None:
