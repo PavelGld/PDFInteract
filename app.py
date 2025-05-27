@@ -82,11 +82,19 @@ with st.sidebar:
     # Model selection
     st.header("🤖 LLM Model")
     model_options = {
+        "GPT-4o": "openai/gpt-4o",
+        "GPT-4o Mini": "openai/gpt-4o-mini", 
+        "GPT-4 Turbo": "openai/gpt-4-turbo",
         "GPT-3.5 Turbo": "openai/gpt-3.5-turbo",
-        "Claude 3 Sonnet": "anthropic/claude-3-sonnet-20240229",
+        "Claude 3.5 Sonnet": "anthropic/claude-3-5-sonnet-20241022",
         "Claude 3 Opus": "anthropic/claude-3-opus-20240229",
-        "GPT-4": "openai/gpt-4",
-        "GPT-4 Turbo": "openai/gpt-4-turbo"
+        "Claude 3 Haiku": "anthropic/claude-3-haiku-20240307",
+        "Gemini Pro 1.5": "google/gemini-pro-1.5",
+        "Gemini Flash 1.5": "google/gemini-flash-1.5",
+        "Llama 3.1 405B": "meta-llama/llama-3.1-405b-instruct",
+        "Llama 3.1 70B": "meta-llama/llama-3.1-70b-instruct",
+        "Mixtral 8x7B": "mistralai/mixtral-8x7b-instruct",
+        "Qwen 2.5 72B": "qwen/qwen-2.5-72b-instruct"
     }
     
     selected_model = st.selectbox(

@@ -13,8 +13,12 @@ PDF Processor для PDF Chat Assistant
 
 import PyPDF2
 import re
-from typing import List, Dict
+from typing import List, Dict, Any, Optional
 from io import BytesIO
+import fitz  # PyMuPDF
+from PIL import Image
+import base64
+import io
 
 class PDFProcessor:
     def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
@@ -209,3 +213,89 @@ class PDFProcessor:
             'total_lines': len(lines),
             'total_paragraphs': len(paragraphs)
         }
+    
+    def extract_images(self, file_path: str) -> List[Dict[str, Any]]:
+        """
+        Extract images from PDF file.
+        
+        Args:
+            file_path: Path to PDF file
+            
+        Returns:
+            List of image dictionaries with metadata
+        """
+        images = []
+        
+        try:
+            # Open PDF with PyMuPDF
+            doc = fitz.open(file_path)
+            
+            for page_num in range(len(doc)):
+                page = doc.load_page(page_num)
+                image_list = page.get_images(full=True)
+                
+                for img_index, img in enumerate(image_list):
+                    try:
+                        # Get image data
+                        xref = img[0]
+                        pix = fitz.Pixmap(doc, xref)
+                        
+                        # Convert to RGB if necessary
+                        if pix.n - pix.alpha < 4:
+                            img_data = pix.tobytes("png")
+                        else:
+                            pix1 = fitz.Pixmap(fitz.csRGB, pix)
+                            img_data = pix1.tobytes("png")
+                            pix1 = None
+                        
+                        # Encode to base64 for storage
+                        img_base64 = base64.b64encode(img_data).decode()
+                        
+                        images.append({
+                            'page': page_num + 1,
+                            'index': img_index,
+                            'width': pix.width,
+                            'height': pix.height,
+                            'data': img_base64,
+                            'size_bytes': len(img_data)
+                        })
+                        
+                        pix = None  # Free memory
+                        
+                    except Exception as e:
+                        print(f"Error extracting image {img_index} from page {page_num + 1}: {e}")
+                        continue
+            
+            doc.close()
+            
+        except Exception as e:
+            print(f"Error extracting images: {e}")
+        
+        return images
+    
+    def analyze_images_with_llm(self, images: List[Dict[str, Any]], openrouter_client=None, model: str = "openai/gpt-4o") -> str:
+        """
+        Analyze images using vision-capable LLM.
+        
+        Args:
+            images: List of image dictionaries
+            openrouter_client: OpenRouter client
+            model: Vision-capable model
+            
+        Returns:
+            Description of images content
+        """
+        if not images or not openrouter_client:
+            return ""
+        
+        try:
+            # Basic image description for now
+            descriptions = []
+            for img in images[:5]:  # Limit to first 5 images
+                descriptions.append(f"Изображение на странице {img['page']} размером {img['width']}x{img['height']} пикселей")
+            
+            return "; ".join(descriptions)
+            
+        except Exception as e:
+            print(f"Error analyzing images: {e}")
+            return ""

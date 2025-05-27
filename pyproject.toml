@@ -15,6 +15,13 @@ dependencies = [
     "tiktoken>=0.9.0",
     "faiss-cpu>=1.11.0",
     "scikit-learn>=1.6.1",
+    "pydantic>=2.11.5",
+    "anthropic>=0.52.0",
+    "httpx>=0.28.1",
+    "langchain-core>=0.3.61",
+    "numpy>=2.2.6",
+    "pymupdf>=1.26.0",
+    "pillow>=11.2.1",
 ]
 
 [[tool.uv.index]]

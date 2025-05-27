@@ -2,7 +2,7 @@ modules = ["python-3.11"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["bash", "cargo", "glibcLocales", "libiconv", "rustc"]
+packages = ["bash", "cargo", "freetype", "glibcLocales", "gumbo", "harfbuzz", "jbig2dec", "lcms2", "libiconv", "libimagequant", "libjpeg", "libjpeg_turbo", "libtiff", "libwebp", "libxcrypt", "mupdf", "openjpeg", "rustc", "swig", "tcl", "tk", "xcbuild", "zlib"]
 
 [deployment]
 deploymentTarget = "autoscale"
