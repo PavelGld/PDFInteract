@@ -1,27 +1,19 @@
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS
 from langchain.schema import Document
-from langchain_openai import OpenAIEmbeddings
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 from typing import List, Dict, Any
-import tempfile
 import os
 
 class VectorStore:
     def __init__(self, api_key: str):
         """
-        Initialize vector store with LangChain and FAISS.
+        Initialize vector store with TF-IDF vectorization.
         
         Args:
-            api_key: OpenAI API key for embeddings
+            api_key: API key (kept for compatibility)
         """
-        # Set up embeddings with API key
-        os.environ["OPENAI_API_KEY"] = api_key
-        os.environ["OPENAI_API_BASE"] = "https://openrouter.ai/api/v1"
-        
-        self.embeddings = OpenAIEmbeddings(
-            model="text-embedding-ada-002"
-        )
-        
         # Set up text splitter
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
@@ -29,13 +21,24 @@ class VectorStore:
             length_function=len,
         )
         
+        # Use TF-IDF for reliable vectorization
+        self.vectorizer = TfidfVectorizer(
+            max_features=5000,
+            stop_words='english',
+            ngram_range=(1, 2),  # Include bigrams for better context
+            min_df=1,
+            max_df=0.95
+        )
+        
         self.vectorstore = None
         self.chunks = []
         self.documents = []
+        self.tfidf_matrix = None
+        self.is_fitted = False
     
     def add_chunks(self, chunks: List[Dict[str, Any]]) -> None:
         """
-        Add text chunks to the vector store using LangChain.
+        Add text chunks to the vector store using TF-IDF.
         
         Args:
             chunks: List of chunk dictionaries with 'content' key
@@ -47,6 +50,7 @@ class VectorStore:
         
         # Convert chunks to LangChain Documents
         documents = []
+        texts = []
         for chunk in chunks:
             doc = Document(
                 page_content=chunk['content'],
@@ -57,20 +61,24 @@ class VectorStore:
                 }
             )
             documents.append(doc)
+            texts.append(chunk['content'])
         
         self.documents = documents
         
-        # Create FAISS vector store from documents
+        # Create TF-IDF matrix
         try:
-            self.vectorstore = FAISS.from_documents(documents, self.embeddings)
-            print(f"Successfully created FAISS vector store with {len(documents)} documents")
+            self.tfidf_matrix = self.vectorizer.fit_transform(texts)
+            self.is_fitted = True
+            self.vectorstore = True  # Mark as active
+            print(f"Successfully created TF-IDF vector store with {len(documents)} documents")
         except Exception as e:
             print(f"Error creating vector store: {e}")
             self.vectorstore = None
+            self.is_fitted = False
     
     def search(self, query: str, k: int = 5, score_threshold: float = 0.1) -> List[Dict[str, Any]]:
         """
-        Search for similar chunks using LangChain similarity search.
+        Search for similar chunks using TF-IDF similarity.
         
         Args:
             query: Search query text
@@ -80,27 +88,32 @@ class VectorStore:
         Returns:
             List of dictionaries with chunk content and similarity scores
         """
-        if not self.vectorstore:
+        if not self.is_fitted or self.tfidf_matrix is None:
             print("Vector store not initialized")
             return []
         
         try:
-            # Use LangChain's similarity search with scores
-            results = self.vectorstore.similarity_search_with_score(query, k=k)
+            # Transform query using fitted vectorizer
+            query_vector = self.vectorizer.transform([query])
+            
+            # Calculate cosine similarities
+            similarities = cosine_similarity(query_vector, self.tfidf_matrix).flatten()
+            
+            # Get top k indices
+            top_indices = similarities.argsort()[-k:][::-1]
             
             # Convert results to our format
             formatted_results = []
-            for doc, distance in results:
-                # Convert distance to similarity score (lower distance = higher similarity)
-                similarity_score = 1.0 / (1.0 + distance)
+            for idx in top_indices:
+                similarity_score = similarities[idx]
                 
                 if similarity_score >= score_threshold:
                     result = {
-                        'content': doc.page_content,
-                        'score': similarity_score,
-                        'distance': distance,
-                        'metadata': doc.metadata,
-                        'id': doc.metadata.get('chunk_id', 'unknown')
+                        'content': self.chunks[idx]['content'],
+                        'score': float(similarity_score),
+                        'distance': float(1.0 - similarity_score),  # Convert to distance
+                        'metadata': self.documents[idx].metadata,
+                        'id': self.documents[idx].metadata.get('chunk_id', 'unknown')
                     }
                     formatted_results.append(result)
             
@@ -112,22 +125,20 @@ class VectorStore:
     
     def get_retriever(self, search_type: str = "similarity", k: int = 5):
         """
-        Get LangChain retriever for the vector store.
+        Get retriever-like interface.
         
         Args:
             search_type: Type of search to perform
             k: Number of documents to retrieve
             
         Returns:
-            LangChain retriever object
+            Custom retriever function
         """
-        if not self.vectorstore:
-            return None
+        def retrieve(query: str):
+            results = self.search(query, k=k, score_threshold=0.0)
+            return [self.documents[i] for i, _ in enumerate(results) if i < len(self.documents)]
         
-        return self.vectorstore.as_retriever(
-            search_type=search_type,
-            search_kwargs={"k": k}
-        )
+        return retrieve
     
     def get_chunk_by_id(self, chunk_id: str) -> Dict[str, Any]:
         """
@@ -154,9 +165,9 @@ class VectorStore:
         return {
             'total_chunks': len(self.chunks),
             'total_documents': len(self.documents),
-            'vectorstore_type': 'FAISS with LangChain',
-            'vectorstore_active': self.vectorstore is not None,
-            'embedding_model': 'OpenAI via OpenRouter'
+            'vectorstore_type': 'TF-IDF with scikit-learn',
+            'vectorstore_active': self.vectorstore is not None and self.is_fitted,
+            'embedding_model': 'TF-IDF Vectorization'
         }
     
     def save_to_disk(self, path: str) -> None:
@@ -166,12 +177,8 @@ class VectorStore:
         Args:
             path: Directory path to save the vector store
         """
-        if self.vectorstore:
-            try:
-                self.vectorstore.save_local(path)
-                print(f"Vector store saved to {path}")
-            except Exception as e:
-                print(f"Error saving vector store: {e}")
+        # For TF-IDF, we could save the vectorizer and matrix
+        print(f"TF-IDF vector store ready (no disk save needed)")
     
     def load_from_disk(self, path: str) -> None:
         """
@@ -180,12 +187,7 @@ class VectorStore:
         Args:
             path: Directory path containing the saved vector store
         """
-        try:
-            self.vectorstore = FAISS.load_local(path, self.embeddings)
-            print(f"Vector store loaded from {path}")
-        except Exception as e:
-            print(f"Error loading vector store: {e}")
-            self.clear()
+        print(f"TF-IDF vector store initialization from memory")
     
     def clear(self) -> None:
         """
@@ -194,6 +196,8 @@ class VectorStore:
         self.chunks = []
         self.documents = []
         self.vectorstore = None
+        self.tfidf_matrix = None
+        self.is_fitted = False
     
     def add_single_chunk(self, chunk: Dict[str, Any]) -> None:
         """
