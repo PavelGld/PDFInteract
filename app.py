@@ -89,16 +89,15 @@ with st.sidebar:
     # Model selection
     st.header("🤖 LLM Model")
     model_options = {
-        "GPT-4o 🖼️ (Vision)": "openai/gpt-4o",
-        "GPT-4o Mini 🖼️ (Vision)": "openai/gpt-4o-mini", 
-        "GPT-4 Turbo 🖼️ (Vision)": "openai/gpt-4-turbo",
+        "GPT-4o": "openai/gpt-4o",
+        "GPT-4o Mini": "openai/gpt-4o-mini", 
+        "GPT-4 Turbo": "openai/gpt-4-turbo",
         "GPT-3.5 Turbo": "openai/gpt-3.5-turbo",
-        "Claude 3.5 Sonnet 🖼️ (Vision)": "anthropic/claude-3-5-sonnet-20240620",
-        "Claude 3 Opus 🖼️ (Vision)": "anthropic/claude-3-opus-20240229",
-        "Claude 3 Haiku 🖼️ (Vision)": "anthropic/claude-3-haiku-20240307",
-        "Gemini Pro 1.5 🖼️ (Vision)": "google/gemini-pro-1.5",
-        "Gemini Flash 1.5 🖼️ (Vision)": "google/gemini-flash-1.5",
-        "Llama 3.2 90B Vision 🖼️": "meta-llama/llama-3.2-90b-vision-instruct",
+        "Claude 3.5 Sonnet": "anthropic/claude-3.5-sonnet-20241022",
+        "Claude 3 Opus": "anthropic/claude-3-opus-20240229",
+        "Claude 3 Haiku": "anthropic/claude-3-haiku-20240307",
+        "Gemini Pro 1.5": "google/gemini-pro-1.5",
+        "Gemini Flash 1.5": "google/gemini-flash-1.5",
         "Llama 3.1 405B": "meta-llama/llama-3.1-405b-instruct",
         "Llama 3.1 70B": "meta-llama/llama-3.1-70b-instruct",
         "Mixtral 8x7B": "mistralai/mixtral-8x7b-instruct",
@@ -109,14 +108,8 @@ with st.sidebar:
         "Select model:",
         options=list(model_options.keys()),
         index=0,
-        help="🖼️ Vision models can analyze images from PDFs"
+        help="Choose the language model for processing your questions"
     )
-    
-    # Show vision capability info
-    if "🖼️" in selected_model:
-        st.info("🖼️ Эта модель может анализировать изображения из PDF")
-    else:
-        st.warning("⚠️ Эта модель работает только с текстом")
     
     st.session_state.selected_model = model_options[selected_model]
     
@@ -224,14 +217,6 @@ with st.sidebar:
                             # Create chunks
                             chunks = pdf_processor.create_chunks(text_content)
                             
-                            # Extract images from PDF
-                            images = pdf_processor.extract_images(tmp_file_path)
-                            
-                            # Analyze images (basic description for now)
-                            images_description = ""
-                            if images:
-                                images_description = f"Документ содержит {len(images)} изображений"
-                            
                             # Generate document summary only
                             summary = topic_extractor.generate_document_summary(text_content, [])
                             
@@ -254,13 +239,11 @@ with st.sidebar:
                             st.session_state.pdf_name = uploaded_file.name
                             st.session_state.pdf_base64 = pdf_base64
                             st.session_state.document_topics = []
-                            st.session_state.document_images = images
+                            st.session_state.document_images = []
                             st.session_state.document_summary = summary
                             st.session_state.messages = []  # Clear previous chat
                             
                             success_msg = f"✅ Successfully processed {len(chunks)} text chunks"
-                            if images:
-                                success_msg += f" and {len(images)} images"
                             
                             st.success(success_msg)
                             st.rerun()
@@ -297,21 +280,7 @@ else:
             st.markdown("**📋 Краткое описание:**")
             st.info(st.session_state.document_summary)
         
-        # Show images info
-        if st.session_state.get('document_images'):
-            with st.expander(f"🖼️ Изображения в документе ({len(st.session_state.document_images)})", expanded=False):
-                for i, img in enumerate(st.session_state.document_images[:5]):  # Show first 5
-                    col1, col2 = st.columns([1, 3])
-                    with col1:
-                        try:
-                            # Display small thumbnail
-                            img_data = base64.b64decode(img['data'])
-                            st.image(img_data, width=100, caption=f"Страница {img['page']}")
-                        except:
-                            st.write(f"📄 Страница {img['page']}")
-                    with col2:
-                        st.write(f"**Размер:** {img['width']}×{img['height']} пикселей")
-                        st.write(f"**Размер файла:** {img['size_bytes']:,} байт")
+
         
         if st.session_state.get('pdf_base64'):
             # Show PDF stats only in debug mode
