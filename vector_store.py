@@ -28,21 +28,38 @@ class VectorStore:
         Returns:
             List of preprocessed words
         """
-        # Convert to lowercase and extract words
+        # Convert to lowercase and extract words (including Russian)
         text = text.lower()
-        words = re.findall(r'\b[a-zA-Z]{2,}\b', text)
+        words = re.findall(r'\b[a-zA-Zа-яё]{2,}\b', text)
         
-        # Simple stop word removal
+        # Expanded stop word removal (English + Russian)
         stop_words = {
+            # English stop words
             'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
             'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during',
             'before', 'after', 'above', 'below', 'between', 'among', 'is', 'are',
             'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does',
             'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can',
-            'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they'
+            'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they',
+            # Russian stop words
+            'и', 'в', 'во', 'не', 'что', 'он', 'на', 'я', 'с', 'со', 'как', 'а', 'то', 'все',
+            'она', 'так', 'его', 'но', 'да', 'ты', 'к', 'у', 'же', 'вы', 'за', 'бы', 'по',
+            'только', 'ее', 'мне', 'было', 'вот', 'от', 'меня', 'еще', 'нет', 'о', 'из',
+            'ему', 'теперь', 'когда', 'даже', 'ну', 'вдруг', 'ли', 'если', 'уже', 'или',
+            'ни', 'быть', 'был', 'него', 'до', 'вас', 'нибудь', 'опять', 'уж', 'вам', 'ведь',
+            'там', 'потом', 'себя', 'ничего', 'ей', 'может', 'они', 'тут', 'где', 'есть',
+            'надо', 'ней', 'для', 'мы', 'тебя', 'их', 'чем', 'была', 'сам', 'чтоб', 'без',
+            'будто', 'чего', 'раз', 'тоже', 'себе', 'под', 'будет', 'ж', 'тогда', 'кто',
+            'этот', 'того', 'потому', 'этого', 'какой', 'совсем', 'ним', 'здесь', 'этом',
+            'один', 'почти', 'мой', 'тем', 'чтобы', 'нее', 'сейчас', 'были', 'куда', 'зачем',
+            'всех', 'можно', 'при', 'наконец', 'два', 'об', 'другой', 'хоть', 'после', 'над',
+            'больше', 'тот', 'через', 'эти', 'нас', 'про', 'всего', 'них', 'какая', 'много',
+            'разве', 'три', 'эту', 'моя', 'впрочем', 'хорошо', 'свою', 'этой', 'перед', 'иногда',
+            'лучше', 'чуть', 'том', 'нельзя', 'такой', 'им', 'более', 'всегда', 'конечно', 'всю',
+            'между'
         }
         
-        return [word for word in words if word not in stop_words]
+        return [word for word in words if word not in stop_words and len(word) > 2]
     
     def _build_tfidf_vectors(self):
         """
@@ -122,6 +139,44 @@ class VectorStore:
         
         return dot_product / (magnitude1 * magnitude2)
     
+    def _simple_text_search(self, query: str, k: int) -> List[Dict[str, Any]]:
+        """
+        Simple text search as fallback when TF-IDF doesn't find matches.
+        
+        Args:
+            query: Search query
+            k: Number of results to return
+            
+        Returns:
+            List of matching chunks
+        """
+        query_words = self._preprocess_text(query)
+        results = []
+        
+        for chunk in self.chunks:
+            chunk_content_lower = chunk['content'].lower()
+            query_lower = query.lower()
+            
+            # Count word matches
+            word_matches = sum(1 for word in query_words if word in chunk_content_lower)
+            
+            # Check for exact phrase match
+            phrase_match = query_lower in chunk_content_lower
+            
+            # Calculate simple score
+            score = word_matches / max(len(query_words), 1)
+            if phrase_match:
+                score += 0.5
+            
+            if score > 0:
+                result_chunk = chunk.copy()
+                result_chunk['score'] = score
+                results.append(result_chunk)
+        
+        # Sort by score and return top k
+        results.sort(key=lambda x: x['score'], reverse=True)
+        return results[:k]
+    
     def add_chunks(self, chunks: List[Dict[str, Any]]) -> None:
         """
         Add text chunks to the vector store.
@@ -187,9 +242,13 @@ class VectorStore:
                 chunk['keyword_matches'] = keyword_matches
                 similarities.append(chunk)
         
-        # If no good matches found, try with lower threshold
-        if not similarities and score_threshold > 0.01:
-            return self.search(query, k, 0.01)
+        # If no good matches found, try with much lower threshold or simple text search
+        if not similarities:
+            if score_threshold > 0.001:
+                return self.search(query, k, 0.001)
+            else:
+                # Fallback to simple text search
+                return self._simple_text_search(query, k)
         
         # Sort by score (descending) and return top k
         similarities.sort(key=lambda x: x['score'], reverse=True)
