@@ -63,7 +63,18 @@ openrouter_client = get_openrouter_client()
 with st.sidebar:
     st.header("📄 PDF Upload")
     
+    # File upload first
+    uploaded_file = st.file_uploader(
+        "Choose a PDF file",
+        type="pdf",
+        help="Upload a PDF file (max 20MB) to start chatting with it",
+        accept_multiple_files=False
+    )
+    
+    st.divider()
+    
     # Model selection
+    st.header("🤖 LLM Model")
     model_options = {
         "GPT-3.5 Turbo": "openai/gpt-3.5-turbo",
         "Claude 3 Sonnet": "anthropic/claude-3-sonnet-20240229",
@@ -73,7 +84,7 @@ with st.sidebar:
     }
     
     selected_model = st.selectbox(
-        "🤖 Select LLM Model",
+        "Select model:",
         options=list(model_options.keys()),
         index=0,
         help="Choose the language model for processing your questions"
@@ -94,6 +105,8 @@ with st.sidebar:
     )
     st.session_state.debug_mode = debug_mode
     
+    st.divider()
+    
     # Chat export/import
     st.header("💾 Chat History")
     
@@ -112,7 +125,7 @@ with st.sidebar:
             help="Download the conversation as a text file"
         )
     
-    # Upload chat history
+    # Upload chat history - fix infinite loading issue
     uploaded_chat = st.file_uploader(
         "📤 Upload Chat History",
         type="txt",
@@ -120,7 +133,7 @@ with st.sidebar:
         key="chat_upload"
     )
     
-    if uploaded_chat is not None:
+    if uploaded_chat is not None and not st.session_state.get('chat_imported', False):
         try:
             chat_content = uploaded_chat.read().decode('utf-8')
             # Parse chat history
@@ -136,20 +149,15 @@ with st.sidebar:
             
             if imported_messages:
                 st.session_state.messages = imported_messages
+                st.session_state.chat_imported = True
                 st.success(f"✅ Imported {len(imported_messages)} messages")
                 st.rerun()
         except Exception as e:
             st.error(f"❌ Error importing chat: {str(e)}")
     
-    st.divider()
-    
-    # File upload
-    uploaded_file = st.file_uploader(
-        "Choose a PDF file",
-        type="pdf",
-        help="Upload a PDF file (max 20MB) to start chatting with it",
-        accept_multiple_files=False
-    )
+    # Reset chat import flag when no file is uploaded
+    if uploaded_chat is None:
+        st.session_state.chat_imported = False
     
     if uploaded_file is not None:
         # Validate file
@@ -207,20 +215,22 @@ with st.sidebar:
     if st.session_state.pdf_processed and st.session_state.pdf_name:
         st.success(f"📚 **Current PDF:** {st.session_state.pdf_name}")
         
-        # Create columns for PDF viewer and chat
-        col1, col2 = st.columns([1, 2])  # PDF takes 1/3, chat takes 2/3
+        # Create columns for PDF viewer and chat with proper spacing
+        col1, col2 = st.columns([1, 2], gap="medium")  # PDF takes 1/3, chat takes 2/3
         
         with col1:
             st.subheader("📄 PDF Viewer")
             
-            # Display PDF using embedded viewer
+            # Display PDF using embedded viewer with full width
             if st.session_state.get('pdf_base64'):
                 pdf_display = f"""
-                <iframe src="data:application/pdf;base64,{st.session_state.pdf_base64}" 
-                        width="100%" height="600px" type="application/pdf">
-                    <p>Your browser doesn't support PDF viewing. 
-                    <a href="data:application/pdf;base64,{st.session_state.pdf_base64}">Download the PDF</a> to view it.</p>
-                </iframe>
+                <div style="width: 100%; height: 700px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden;">
+                    <iframe src="data:application/pdf;base64,{st.session_state.pdf_base64}" 
+                            width="100%" height="100%" frameborder="0" style="border: none;">
+                        <p>Your browser doesn't support PDF viewing. 
+                        <a href="data:application/pdf;base64,{st.session_state.pdf_base64}">Download the PDF</a> to view it.</p>
+                    </iframe>
+                </div>
                 """
                 st.markdown(pdf_display, unsafe_allow_html=True)
             else:
