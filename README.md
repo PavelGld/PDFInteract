@@ -124,7 +124,7 @@ port = 5000
 
 ## 📝 Лицензия
 
-MIT License
+Apache License Version 2.0
 
 ## 🤝 Вклад в проект
 
