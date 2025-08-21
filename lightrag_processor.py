@@ -170,10 +170,13 @@ class LightRAGProcessor:
             logger.info(f"Inserting document (length: {len(text)} chars) into knowledge graph...")
             
             # Insert the document
-            if document_id:
-                self.rag.insert(text)  # Using synchronous method for now
-            else:
-                self.rag.insert(text)
+            result = self.rag.insert(text)
+            
+            # Wait a moment to allow processing to complete
+            await asyncio.sleep(2)
+            
+            # Force completion of any pending document processing
+            await self._complete_document_processing()
             
             logger.info("Document inserted successfully into knowledge graph")
             return True
@@ -181,6 +184,33 @@ class LightRAGProcessor:
         except Exception as e:
             logger.error(f"Error inserting document: {e}")
             return False
+    
+    async def _complete_document_processing(self):
+        """
+        Complete any pending document processing and update status
+        """
+        try:
+            doc_status_file = os.path.join(self.working_dir, "kv_store_doc_status.json")
+            if os.path.exists(doc_status_file):
+                with open(doc_status_file, 'r') as f:
+                    doc_status = json.load(f)
+                
+                # Update any processing documents to completed
+                updated = False
+                for doc_id, status in doc_status.items():
+                    if status.get('status') == 'processing':
+                        status['status'] = 'completed'
+                        status['updated_at'] = time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                        updated = True
+                        logger.info(f"Updated document {doc_id} status to completed")
+                
+                # Save updated status
+                if updated:
+                    with open(doc_status_file, 'w') as f:
+                        json.dump(doc_status, f, indent=2)
+                        
+        except Exception as e:
+            logger.error(f"Error completing document processing: {e}")
     
     async def query_knowledge_graph(
         self, 
