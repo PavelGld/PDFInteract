@@ -312,7 +312,7 @@ class AiTunnelEmbeddings:
     
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """
-        Создать эмбеддинги для списка текстов
+        Создать эмбеддинги для списка текстов с учетом rate limiting
         
         Args:
             texts: Список текстов для векторизации
@@ -320,23 +320,53 @@ class AiTunnelEmbeddings:
         Returns:
             Список векторных представлений
         """
-        try:
-            embeddings_response = self.client.embeddings.create(
-                input=texts,
-                model=self.model
-            )
+        import time
+        
+        # Обрабатываем тексты батчами по 5 штук, чтобы не превысить лимит
+        batch_size = 5
+        all_embeddings = []
+        
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
             
-            # Извлекаем векторы из ответа
-            embeddings = [data.embedding for data in embeddings_response.data]
-            return embeddings
-            
-        except Exception as e:
-            print(f"Ошибка при создании эмбеддингов через AiTunnel: {e}")
-            raise e
+            try:
+                embeddings_response = self.client.embeddings.create(
+                    input=batch,
+                    model=self.model
+                )
+                
+                # Извлекаем векторы из ответа
+                batch_embeddings = [data.embedding for data in embeddings_response.data]
+                all_embeddings.extend(batch_embeddings)
+                
+                # Пауза между батчами для соблюдения rate limit (10 запросов в секунду)
+                if i + batch_size < len(texts):
+                    time.sleep(0.6)  # 600ms пауза между батчами
+                    
+            except Exception as e:
+                print(f"Ошибка при создании эмбеддингов для батча {i//batch_size + 1}: {e}")
+                # Если 403 ошибка - увеличиваем паузу и повторяем
+                if "403" in str(e):
+                    print("Rate limit exceeded, увеличиваем паузу...")
+                    time.sleep(2.0)
+                    try:
+                        embeddings_response = self.client.embeddings.create(
+                            input=batch,
+                            model=self.model
+                        )
+                        batch_embeddings = [data.embedding for data in embeddings_response.data]
+                        all_embeddings.extend(batch_embeddings)
+                    except Exception as retry_e:
+                        print(f"Повторная ошибка для батча {i//batch_size + 1}: {retry_e}")
+                        raise retry_e
+                else:
+                    raise e
+        
+        return all_embeddings
     
     def embed_query(self, text: str) -> List[float]:
         """
-        Создать эмбеддинг для одного запроса
+        Создать эмбеддинг для одного запроса с обработкой rate limiting
         
         Args:
             text: Текст запроса
@@ -344,6 +374,8 @@ class AiTunnelEmbeddings:
         Returns:
             Векторное представление
         """
+        import time
+        
         try:
             embeddings_response = self.client.embeddings.create(
                 input=text,
@@ -353,5 +385,19 @@ class AiTunnelEmbeddings:
             return embeddings_response.data[0].embedding
             
         except Exception as e:
-            print(f"Ошибка при создании эмбеддинга запроса через AiTunnel: {e}")
-            raise e
+            # Если 403 ошибка - делаем паузу и повторяем
+            if "403" in str(e):
+                print("Rate limit exceeded для запроса, повторяем через 2 секунды...")
+                time.sleep(2.0)
+                try:
+                    embeddings_response = self.client.embeddings.create(
+                        input=text,
+                        model=self.model
+                    )
+                    return embeddings_response.data[0].embedding
+                except Exception as retry_e:
+                    print(f"Повторная ошибка при создании эмбеддинга запроса: {retry_e}")
+                    raise retry_e
+            else:
+                print(f"Ошибка при создании эмбеддинга запроса через AiTunnel: {e}")
+                raise e

@@ -46,7 +46,9 @@ class VectorStore:
             # Extract texts from chunks
             texts = [chunk['content'] for chunk in chunks]
             
-            # Get embeddings using AiTunnel API
+            print(f"Creating embeddings for {len(texts)} text chunks using AiTunnel API (processing in batches due to rate limits)...")
+            
+            # Get embeddings using AiTunnel API with rate limiting
             self.embeddings = self.embeddings_model.embed_documents(texts)
             self.embeddings = np.array(self.embeddings)
             self.vectorstore = True
