@@ -7,7 +7,7 @@ Streamlit веб-приложение для интерактивного чат
 
 Основные компоненты:
 - PDF загрузка и обработка текста
-- Векторное хранилище с эмбеддингами через Course API
+- Векторное хранилище с эмбеддингами через AiTunnel API
 - LLM интеграция через OpenRouter (13 моделей)
 - Тематические метки документов
 - Интерактивный чат с историей
@@ -248,13 +248,13 @@ with st.sidebar:
                             # Generate document summary
                             summary = topic_extractor.generate_document_summary(text_content, topics)
                             
-                            # Create vector store with Course API
-                            course_api_key = os.environ.get("COURSE_API_KEY")
-                            if not course_api_key:
-                                st.error("⚠️ Course API key not found. Please set COURSE_API_KEY environment variable.")
+                            # Create vector store with AiTunnel API
+                            aitunnel_api_key = os.environ.get("AITUNNEL_API_KEY")
+                            if not aitunnel_api_key:
+                                st.error("⚠️ AiTunnel API key not found. Please set AITUNNEL_API_KEY environment variable.")
                                 st.stop()
                             
-                            vector_store = VectorStore(course_api_key)
+                            vector_store = VectorStore(aitunnel_api_key)
                             vector_store.add_chunks(chunks)
                             
                             # Store PDF as base64 for viewing

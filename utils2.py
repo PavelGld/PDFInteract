@@ -289,3 +289,69 @@ class OpenAIEmbeddings(OpenAIEmbeds):
     
     def __init__(self, course_api_key, **kwargs):
         super().__init__(client = NDTOpenAI(api_key=course_api_key).embeddings, async_client= AsyncNDTOpenAI(api_key=course_api_key).embeddings, **kwargs)
+
+
+class AiTunnelEmbeddings:
+    """
+    Класс для работы с AiTunnel API эмбеддингами
+    """
+    
+    def __init__(self, api_key: str, model: str = "text-embedding-3-large"):
+        """
+        Инициализация клиента AiTunnel
+        
+        Args:
+            api_key: AiTunnel API ключ (sk-aitunnel-xxx)
+            model: Модель для эмбеддингов
+        """
+        self.client = OpenAI(
+            api_key=api_key,
+            base_url="https://api.aitunnel.ru/v1/"
+        )
+        self.model = model
+    
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """
+        Создать эмбеддинги для списка текстов
+        
+        Args:
+            texts: Список текстов для векторизации
+            
+        Returns:
+            Список векторных представлений
+        """
+        try:
+            embeddings_response = self.client.embeddings.create(
+                input=texts,
+                model=self.model
+            )
+            
+            # Извлекаем векторы из ответа
+            embeddings = [data.embedding for data in embeddings_response.data]
+            return embeddings
+            
+        except Exception as e:
+            print(f"Ошибка при создании эмбеддингов через AiTunnel: {e}")
+            raise e
+    
+    def embed_query(self, text: str) -> List[float]:
+        """
+        Создать эмбеддинг для одного запроса
+        
+        Args:
+            text: Текст запроса
+            
+        Returns:
+            Векторное представление
+        """
+        try:
+            embeddings_response = self.client.embeddings.create(
+                input=text,
+                model=self.model
+            )
+            
+            return embeddings_response.data[0].embedding
+            
+        except Exception as e:
+            print(f"Ошибка при создании эмбеддинга запроса через AiTunnel: {e}")
+            raise e

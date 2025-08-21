@@ -29,7 +29,7 @@ pip install streamlit PyPDF2 requests scikit-learn numpy openai langchain langch
 
 ```env
 OPENROUTER_API_KEY=your_openrouter_api_key_here
-COURSE_API_KEY=your_course_api_key_here
+AITUNNEL_API_KEY=sk-aitunnel-xxx
 ```
 
 ### Запуск приложения
@@ -62,8 +62,8 @@ streamlit run app.py --server.port 5000
 - Очистка и нормализация текста
 
 ### 2. Векторное хранилище (vector_store.py)
-- Создание эмбеддингов через Course API
-- Использование косинусного сходства для поиска
+- Создание эмбеддингов через AiTunnel API (text-embedding-3-large)
+- Использование косинусного сходства для поиска  
 - Хранение векторов в памяти с NumPy
 
 ### 3. LLM интеграция (openrouter_client.py)
@@ -101,7 +101,7 @@ port = 5000
 1. **Загрузка PDF** → Пользователь загружает документ
 2. **Извлечение текста** → PyPDF2 обрабатывает файл
 3. **Создание фрагментов** → Текст разбивается на части
-4. **Векторизация** → Course API создает эмбеддинги
+4. **Векторизация** → AiTunnel API создает эмбеддинги
 5. **Индексация** → Векторы сохраняются для поиска
 6. **Запрос пользователя** → Вопрос обрабатывается
 7. **Поиск контекста** → Находятся релевантные фрагменты

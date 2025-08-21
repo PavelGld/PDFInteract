@@ -2,10 +2,10 @@
 Векторное хранилище для PDF Chat Assistant
 
 Модуль для создания и управления векторным хранилищем документов.
-Использует Course API для создания эмбеддингов и косинусное сходство для поиска.
+Использует AiTunnel API для создания эмбеддингов и косинусное сходство для поиска.
 
 Основные функции:
-- Создание векторных представлений текстовых фрагментов
+- Создание векторных представлений текстовых фрагментов через AiTunnel API
 - Поиск релевантных документов по запросу
 - Управление индексом векторов в памяти
 """
@@ -14,18 +14,18 @@ import numpy as np
 from typing import List, Dict, Any
 import os
 from sklearn.metrics.pairwise import cosine_similarity
-from utils2 import OpenAIEmbeddings
+from utils2 import AiTunnelEmbeddings
 
 class VectorStore:
     def __init__(self, api_key: str):
         """
-        Initialize vector store with Course API embeddings.
+        Initialize vector store with AiTunnel API embeddings.
         
         Args:
-            api_key: Course API key for embeddings
+            api_key: AiTunnel API key (sk-aitunnel-xxx) for embeddings
         """
-        self.course_api_key = os.environ.get("COURSE_API_KEY", api_key)
-        self.embeddings_model = OpenAIEmbeddings(course_api_key=self.course_api_key)
+        self.aitunnel_api_key = os.environ.get("AITUNNEL_API_KEY", api_key)
+        self.embeddings_model = AiTunnelEmbeddings(api_key=self.aitunnel_api_key)
         self.chunks = []
         self.embeddings = []
         self.vectorstore = None
@@ -46,11 +46,11 @@ class VectorStore:
             # Extract texts from chunks
             texts = [chunk['content'] for chunk in chunks]
             
-            # Get embeddings using Course API
+            # Get embeddings using AiTunnel API
             self.embeddings = self.embeddings_model.embed_documents(texts)
             self.embeddings = np.array(self.embeddings)
             self.vectorstore = True
-            print(f"Successfully created vector store with {len(chunks)} documents using Course API")
+            print(f"Successfully created vector store with {len(chunks)} documents using AiTunnel API")
             
         except Exception as e:
             print(f"Error creating vector store: {e}")

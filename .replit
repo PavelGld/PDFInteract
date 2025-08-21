@@ -44,3 +44,6 @@ args = "uv add PyPDF2 sentence-transformers faiss-cpu requests numpy"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[agent]
+integrations = ["python_anthropic==1.0.0", "python_openai==1.0.0"]
