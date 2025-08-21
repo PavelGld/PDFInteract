@@ -149,11 +149,6 @@ class LightRAGProcessor:
                     max_token_size=8192,
                     func=self.embedding_func,
                 ),
-                # Add conservative parameters to avoid internal library bugs
-                max_parallel_insert=1,  # Process one document at a time
-                chunk_token_size=800,  # Smaller chunks
-                # Disable some features that might cause the error
-                enable_llm_cache_for_extract=False,
             )
             
             # CRITICAL: Both calls required in this exact order
