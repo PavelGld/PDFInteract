@@ -93,13 +93,30 @@ topic_extractor = TopicExtractor(openrouter_client)
 with st.sidebar:
     st.header("📄 PDF Upload")
     
-    # File upload first
-    uploaded_file = st.file_uploader(
-        "Choose a PDF file",
-        type="pdf",
-        help="Upload a PDF file (max 20MB) to start chatting with it",
-        accept_multiple_files=False
+    # File upload with alternative method
+    upload_method = st.radio(
+        "Выберите способ загрузки:",
+        ["Загрузка файла", "Альтернативный метод"],
+        help="Если загрузка файла не работает, используйте альтернативный метод"
     )
+    
+    uploaded_file = None
+    
+    if upload_method == "Загрузка файла":
+        uploaded_file = st.file_uploader(
+            "Choose a PDF file",
+            type="pdf",
+            help="Upload a PDF file (max 50MB) to start chatting with it",
+            accept_multiple_files=False
+        )
+    else:
+        st.info("⚠️ Альтернативный метод для диагностики проблем с загрузкой файлов")
+        st.text_area(
+            "Вставьте base64 содержимое PDF или другую диагностическую информацию:",
+            placeholder="Этот метод в разработке...",
+            height=100,
+            disabled=True
+        )
     
     st.divider()
     

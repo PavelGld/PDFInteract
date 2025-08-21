@@ -2,6 +2,13 @@
 headless = true
 address = "0.0.0.0"
 port = 5000
+maxUploadSize = 200
+maxMessageSize = 200
+enableCORS = false
+enableXsrfProtection = false
+
+[browser]
+gatherUsageStats = false
 
 [theme]
 primaryColor = "#FF6B6B"

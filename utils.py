@@ -6,7 +6,7 @@ import os
 
 def validate_pdf_file(uploaded_file) -> Tuple[bool, str]:
     """
-    Validate uploaded PDF file.
+    Validate uploaded PDF file with enhanced diagnostics.
     
     Args:
         uploaded_file: Streamlit uploaded file object
@@ -14,29 +14,55 @@ def validate_pdf_file(uploaded_file) -> Tuple[bool, str]:
     Returns:
         Tuple of (is_valid, error_message)
     """
-    if uploaded_file is None:
-        return False, "No file uploaded"
-    
-    # Check file extension
-    if not uploaded_file.name.lower().endswith('.pdf'):
-        return False, "File must be a PDF (.pdf extension)"
-    
-    # Check MIME type
-    mime_type, _ = mimetypes.guess_type(uploaded_file.name)
-    if mime_type != 'application/pdf':
-        return False, "File must be a valid PDF document"
-    
-    # Check file size (20MB limit)
-    max_size = 20 * 1024 * 1024  # 20MB in bytes
-    if uploaded_file.size > max_size:
-        size_mb = uploaded_file.size / (1024 * 1024)
-        return False, f"File size ({size_mb:.1f} MB) exceeds 20MB limit"
-    
-    # Check minimum size
-    if uploaded_file.size < 100:  # Less than 100 bytes is likely not a valid PDF
-        return False, "File is too small to be a valid PDF"
-    
-    return True, ""
+    try:
+        if uploaded_file is None:
+            return False, "No file uploaded"
+        
+        print(f"📄 Validating file: {uploaded_file.name}")
+        print(f"📊 File size: {uploaded_file.size} bytes ({uploaded_file.size / (1024*1024):.2f} MB)")
+        
+        # Check file extension
+        if not uploaded_file.name.lower().endswith('.pdf'):
+            print(f"❌ Invalid extension: {uploaded_file.name}")
+            return False, "File must be a PDF (.pdf extension)"
+        
+        # Check MIME type
+        mime_type, _ = mimetypes.guess_type(uploaded_file.name)
+        print(f"🔍 Detected MIME type: {mime_type}")
+        if mime_type != 'application/pdf':
+            print(f"❌ Invalid MIME type: {mime_type}")
+            return False, "File must be a valid PDF document"
+        
+        # Check file size (more generous limit - 50MB)
+        max_size = 50 * 1024 * 1024  # 50MB in bytes (matches Streamlit config)
+        if uploaded_file.size > max_size:
+            size_mb = uploaded_file.size / (1024 * 1024)
+            print(f"❌ File too large: {size_mb:.1f} MB > 50 MB")
+            return False, f"File size ({size_mb:.1f} MB) exceeds 50MB limit"
+        
+        # Check minimum size
+        if uploaded_file.size < 100:  # Less than 100 bytes is likely not a valid PDF
+            print(f"❌ File too small: {uploaded_file.size} bytes")
+            return False, "File is too small to be a valid PDF"
+        
+        # Check PDF header
+        try:
+            file_content = uploaded_file.getvalue()
+            if not file_content.startswith(b'%PDF'):
+                print(f"❌ Invalid PDF header: {file_content[:10]}")
+                return False, "File does not appear to be a valid PDF (invalid header)"
+            else:
+                print(f"✅ Valid PDF header detected")
+        except Exception as header_error:
+            print(f"❌ Error reading file header: {header_error}")
+            return False, f"Error reading file: {str(header_error)}"
+        
+        print(f"✅ File validation successful")
+        return True, ""
+        
+    except Exception as e:
+        print(f"❌ Validation error: {e}")
+        return False, f"Validation error: {str(e)}"
 
 def format_chat_message(message: Dict[str, str]) -> str:
     """
