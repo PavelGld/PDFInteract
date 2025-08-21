@@ -1,0 +1,23 @@
+{
+  "doc-4f8755ea327e8bc66f9e934fa19cbbe1": {
+    "status": "processed",
+    "chunks_count": 5,
+    "chunks_list": [
+      "chunk-1d5fad645ea39507e2bd26d898b086be",
+      "chunk-ab13acc30d9b449fbc62b2763c669455",
+      "chunk-aea273771d938b403f1c05ebf4b7df50",
+      "chunk-f12983e8b0ac1db30291d7955ae5eaba",
+      "chunk-b4aa7759fccd52fff11982ce7f6cdd06"
+    ],
+    "content_summary": "--- Page 1 ---\n\nМинистерство образования и науки Пермского края Федеральное государственное автономное образовательное учреждение высшего образования «Пермский национальный исследовательский политехнический университет» Федеральное государственное на...",
+    "content_length": 16200,
+    "created_at": "2025-08-21T19:25:06.193227+00:00",
+    "updated_at": "2025-08-21T19:25:07.127896+00:00",
+    "file_path": "unknown_source",
+    "track_id": "insert_20250821_192506_72b91865",
+    "metadata": {
+      "processing_start_time": 1755804306,
+      "processing_end_time": 1755804307
+    }
+  }
+}

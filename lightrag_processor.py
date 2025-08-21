@@ -82,19 +82,27 @@ class LightRAGProcessor:
             # Add current prompt
             messages.append({"role": "user", "content": prompt})
             
-            # Make request to OpenRouter
-            response = self.openrouter_client.create_chat_completion(
-                messages=messages,
+            # Use OpenRouter client's get_response method
+            if len(messages) > 1:
+                # Extract question and history
+                question = messages[-1]['content']
+                history = messages[:-1]  # All but the last message
+                context = system_prompt or ""
+            else:
+                question = prompt
+                history = []
+                context = system_prompt or ""
+            
+            response = self.openrouter_client.get_response(
+                messages=history,
+                question=question,
+                context=context,
                 model=self.model,
                 max_tokens=2000 if not keyword_extraction else 500,
                 temperature=0.1
             )
             
-            if response and 'choices' in response and len(response['choices']) > 0:
-                return response['choices'][0]['message']['content']
-            else:
-                logger.error(f"Invalid response from OpenRouter: {response}")
-                return "Error: Unable to get response from LLM"
+            return response
                 
         except Exception as e:
             logger.error(f"Error in LLM function: {e}")
@@ -109,10 +117,10 @@ class LightRAGProcessor:
             vector_store = VectorStore(self.aitunnel_api_key)
             embeddings = []
             
-            # Create embeddings one by one to match AiTunnel API format
+            # Create embeddings using the AiTunnel API
             for text in texts:
-                embedding = vector_store._create_embedding([text])
-                embeddings.append(embedding[0])
+                embedding = vector_store.embeddings_model.embed_query(text)
+                embeddings.append(embedding)
             
             return np.array(embeddings, dtype=np.float32)
         except Exception as e:
