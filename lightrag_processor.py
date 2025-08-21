@@ -29,7 +29,7 @@ except ImportError as e:
 
 # Import our existing clients
 from openrouter_client import OpenRouterClient
-from utils2 import create_aitunnel_embedder
+from vector_store import VectorStore
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -48,7 +48,6 @@ class LightRAGProcessor:
         
         # Initialize clients
         self.openrouter_client = OpenRouterClient(openrouter_api_key)
-        self.aitunnel_embedder = create_aitunnel_embedder(aitunnel_api_key)
         
         # Ensure working directory exists
         os.makedirs(self.working_dir, exist_ok=True)
@@ -106,8 +105,15 @@ class LightRAGProcessor:
         Embedding function that uses AiTunnel API
         """
         try:
-            # Use existing AiTunnel embedder
-            embeddings = self.aitunnel_embedder.create_embeddings_batch(texts)
+            # Create temporary vector store to use AiTunnel embeddings
+            vector_store = VectorStore(self.aitunnel_api_key)
+            embeddings = []
+            
+            # Create embeddings one by one to match AiTunnel API format
+            for text in texts:
+                embedding = vector_store._create_embedding([text])
+                embeddings.append(embedding[0])
+            
             return np.array(embeddings, dtype=np.float32)
         except Exception as e:
             logger.error(f"Error in embedding function: {e}")
