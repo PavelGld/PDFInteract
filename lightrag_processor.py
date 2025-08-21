@@ -211,7 +211,7 @@ class LightRAGProcessor:
     async def query_knowledge_graph(
         self, 
         query: str, 
-        mode: str = "local",  # Changed to simpler mode
+        mode: str = "naive",  # Use most stable mode
         top_k: int = 3,       # Reduced top_k 
         response_type: str = "single line"  # Simplified response
     ) -> str:
@@ -228,7 +228,7 @@ class LightRAGProcessor:
             if self.rag is None:
                 await self.initialize_rag()
             
-            logger.info(f"Querying knowledge graph with mode={mode}, top_k={top_k}")
+            logger.info(f"Querying knowledge graph with mode=naive (forced), top_k={top_k}")
             
             # Query the knowledge graph with detailed logging
             logger.info("Starting knowledge graph query...")
@@ -242,11 +242,16 @@ class LightRAGProcessor:
             try:
                 logger.info("Calling self.rag.query()...")
                 
-                # Try with even simpler parameters to avoid hanging
-                simple_params = QueryParam(mode="naive", top_k=1, response_type="single line")
-                logger.info(f"Using simplified params: {simple_params}")
+                # Force naive mode and disable rerank for stability
+                stable_params = QueryParam(
+                    mode="naive",  # Always use naive mode for stability
+                    top_k=top_k,
+                    response_type=response_type,
+                    enable_rerank=False  # Disable rerank to avoid configuration issues
+                )
+                logger.info(f"Using stable params: {stable_params}")
                 
-                response = self.rag.query(query=query, param=simple_params)
+                response = self.rag.query(query=query, param=stable_params)
                 logger.info("rag.query() call returned successfully")
                 
             except Exception as query_exception:

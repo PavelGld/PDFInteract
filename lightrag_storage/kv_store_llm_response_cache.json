@@ -24,5 +24,18 @@
     "create_time": 1755808366,
     "update_time": 1755808366,
     "_id": "default:extract:fd022b7215345a2f39c452b880d62cdb"
+  },
+  "naive:query:f637eac3f73323cfff99982a5c091001": {
+    "return": "Одним из основных элементов математических моделей являются конститутивные модели (КМ) или определяющие соотношения (ОС). \n\n**References:**\n- [DC] unknown_source",
+    "cache_type": "query",
+    "chunk_id": null,
+    "embedding": null,
+    "embedding_shape": null,
+    "embedding_min": null,
+    "embedding_max": null,
+    "original_prompt": "что является одним из основных элементов математической модели?",
+    "create_time": 1755809103,
+    "update_time": 1755809103,
+    "_id": "naive:query:f637eac3f73323cfff99982a5c091001"
   }
 }
