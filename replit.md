@@ -13,10 +13,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (January 2025)
 - Integrated LightRAG knowledge graph-based RAG system as alternative to traditional vector RAG
-- Added RAG method selection in sidebar (Traditional Vector RAG vs Knowledge Graph RAG)
+- Added RAG method selection in sidebar (Traditional Vector RAG vs Knowledge Graph RAG)  
 - Implemented automatic fallback to traditional RAG if LightRAG fails
 - Optimized AiTunnel API rate limiting to 1 second intervals (10 requests per 10 seconds)
 - Removed non-functional alternative upload method from interface
+- **FIXED**: Resolved LightRAG library bugs with document insertion by implementing clean state management and chunking strategy (January 21, 2025)
+- **WORKING**: LightRAG now successfully creates vector databases (entities, relationships, chunks) and processes documents correctly
 
 # System Architecture
 
