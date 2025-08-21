@@ -20,9 +20,9 @@ except ImportError:
 try:
     # Import LightRAG components
     from lightrag import LightRAG, QueryParam
-    from lightrag.base import EmbeddingFunc
+    from lightrag.utils import EmbeddingFunc
+    from lightrag.kg.shared_storage import initialize_pipeline_status
     LIGHTRAG_AVAILABLE = True
-    print("LightRAG imported successfully")
 except ImportError as e:
     print(f"LightRAG not available: {e}")
     LIGHTRAG_AVAILABLE = False
@@ -58,7 +58,7 @@ class LightRAGProcessor:
         self, 
         prompt: str, 
         system_prompt: Optional[str] = None, 
-        history_messages: Optional[List[Dict]] = None, 
+        history_messages: List[Dict] = None, 
         keyword_extraction: bool = False, 
         **kwargs
     ) -> str:
@@ -66,7 +66,7 @@ class LightRAGProcessor:
         LLM function that uses OpenRouter API
         """
         if history_messages is None:
-            history_messages = []
+            history_messages: List[Dict[str, str]] = []
             
         try:
             # Build messages for OpenRouter
@@ -82,24 +82,21 @@ class LightRAGProcessor:
             # Add current prompt
             messages.append({"role": "user", "content": prompt})
             
-            # Create a combined prompt with system context
-            combined_prompt = ""
-            if system_prompt:
-                combined_prompt += f"System: {system_prompt}\n\n"
-            
-            combined_prompt += f"User: {prompt}"
-            
-            # Use simple message format that works with OpenRouter
-            simple_messages = []
-            if history_messages:
-                simple_messages.extend(history_messages)
-            
-            simple_messages.append({"role": "user", "content": combined_prompt})
+            # Use OpenRouter client's get_response method
+            if len(messages) > 1:
+                # Extract question and history
+                question = messages[-1]['content']
+                history = messages[:-1]  # All but the last message
+                context = system_prompt or ""
+            else:
+                question = prompt
+                history = []
+                context = system_prompt or ""
             
             response = self.openrouter_client.get_response(
-                messages=simple_messages[:-1],  # History
-                question=combined_prompt,        # Current question with context
-                context="",                      # Empty context since we embedded it in the question
+                messages=history,
+                question=question,
+                context=context,
                 model=self.model,
                 max_tokens=2000 if not keyword_extraction else 500,
                 temperature=0.1
@@ -116,14 +113,13 @@ class LightRAGProcessor:
         Embedding function that uses AiTunnel API
         """
         try:
-            # Reuse existing vector store to avoid multiple API connections
-            if not hasattr(self, '_cached_vector_store'):
-                self._cached_vector_store = VectorStore(self.aitunnel_api_key)
-            
+            # Create temporary vector store to use AiTunnel embeddings
+            vector_store = VectorStore(self.aitunnel_api_key)
             embeddings = []
+            
             # Create embeddings using the AiTunnel API
             for text in texts:
-                embedding = self._cached_vector_store.embeddings_model.embed_query(text)
+                embedding = vector_store.embeddings_model.embed_query(text)
                 embeddings.append(embedding)
             
             return np.array(embeddings, dtype=np.float32)
@@ -142,9 +138,6 @@ class LightRAGProcessor:
         try:
             logger.info("Initializing LightRAG...")
             
-            # Create working directory if it doesn't exist
-            os.makedirs(self.working_dir, exist_ok=True)
-            
             self.rag = LightRAG(
                 working_dir=self.working_dir,
                 llm_model_func=self.llm_model_func,
@@ -154,6 +147,10 @@ class LightRAGProcessor:
                     func=self.embedding_func,
                 ),
             )
+            
+            # REQUIRED initialization calls
+            await self.rag.initialize_storages()
+            await initialize_pipeline_status()
             
             logger.info("LightRAG initialized successfully")
             return self.rag
@@ -172,8 +169,11 @@ class LightRAGProcessor:
             
             logger.info(f"Inserting document (length: {len(text)} chars) into knowledge graph...")
             
-            # Insert using sync method (more stable)
-            self.rag.insert(text)
+            # Insert the document
+            if document_id:
+                self.rag.insert(text)  # Using synchronous method for now
+            else:
+                self.rag.insert(text)
             
             logger.info("Document inserted successfully into knowledge graph")
             return True
@@ -205,12 +205,17 @@ class LightRAGProcessor:
             logger.info(f"Querying knowledge graph: {query[:100]}...")
             
             # Query the knowledge graph  
-            response = self.rag.query(query, param=QueryParam(mode="hybrid"))
+            response = self.rag.query(
+                query=query,
+                param=QueryParam(
+                    mode=mode,
+                    top_k=top_k,
+                    response_type=response_type
+                )
+            )
             
             logger.info("Knowledge graph query completed")
-            if hasattr(response, '__iter__') and not isinstance(response, str):
-                return '\n'.join(str(r) for r in response)
-            return str(response)
+            return response
             
         except Exception as e:
             logger.error(f"Error querying knowledge graph: {e}")
