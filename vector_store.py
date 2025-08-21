@@ -36,7 +36,7 @@ class VectorStore:
         self.embeddings = []
         self.vectorstore = None
         
-    def add_chunks(self, chunks: List[Dict[str, Any]]) -> None:
+    def add_chunks(self, chunks: List[Dict[str, Any]], progress_callback=None) -> None:
         """
         Add text chunks to the vector store.
         
@@ -55,7 +55,7 @@ class VectorStore:
             print(f"Creating embeddings for {len(texts)} text chunks using AiTunnel API (processing in batches due to rate limits)...")
             
             # Get embeddings using AiTunnel API with rate limiting
-            self.embeddings = self.embeddings_model.embed_documents(texts)
+            self.embeddings = self.embeddings_model.embed_documents(texts, progress_callback)
             self.embeddings = np.array(self.embeddings)
             self.vectorstore = True
             print(f"Successfully created vector store with {len(chunks)} documents using AiTunnel API")

@@ -327,7 +327,7 @@ class AiTunnelEmbeddings:
             print(f"✗ AiTunnel API connection failed: {e}")
             return False
     
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    def embed_documents(self, texts: List[str], progress_callback=None) -> List[List[float]]:
         """
         Создать эмбеддинги для списка текстов с учетом rate limiting
         
@@ -346,6 +346,10 @@ class AiTunnelEmbeddings:
         
         for i, text in enumerate(texts):
             print(f"Processing text {i + 1}/{len(texts)} (remaining: {len(texts) - i - 1})")
+            
+            # Обновляем прогресс, если callback предоставлен
+            if progress_callback:
+                progress_callback(i + 1, len(texts))
             
             try:
                 embeddings_response = self.client.embeddings.create(

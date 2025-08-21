@@ -285,9 +285,12 @@ with st.sidebar:
                             def update_progress(current, total):
                                 progress = current / total if total > 0 else 0
                                 progress_bar.progress(progress)
-                                status_text.text(f"Processing {current}/{total} chunks...")
+                                remaining = total - current
+                                est_time_remaining = remaining * 2  # 2 seconds per chunk
+                                status_text.text(f"Processing {current}/{total} chunks... (~{est_time_remaining//60}m {est_time_remaining%60}s remaining)")
                             
-                            vector_store.add_chunks(chunks)
+                            # Pass progress callback to add_chunks
+                            vector_store.add_chunks(chunks, progress_callback=update_progress)
                             
                             # Clear progress indicators
                             progress_bar.empty()
@@ -320,7 +323,7 @@ with st.sidebar:
                     st.error(f"❌ Error processing PDF: {str(e)}")
                 finally:
                     # Clean up temporary file
-                    if 'tmp_file_path' in locals():
+                    if 'tmp_file_path' in locals() and os.path.exists(tmp_file_path):
                         os.unlink(tmp_file_path)
 
 # Clear conversation button
@@ -417,10 +420,14 @@ if st.session_state.pdf_processed:
             with st.spinner("🤔 Thinking..."):
                 try:
                     # Search for relevant chunks
-                    relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.5)
+                    if st.session_state.vector_store is not None:
+                        relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.5)
+                    else:
+                        relevant_chunks = []
+                        st.error("Vector store not initialized")
                     
                     # Debug information - show only if debug mode is enabled
-                    if st.session_state.get('debug_mode', False):
+                    if st.session_state.get('debug_mode', False) and st.session_state.vector_store is not None:
                         stats = st.session_state.vector_store.get_stats()
                         total_chunks = stats.get('total_chunks', 0)
                         st.info(f"🔍 **Search Results:** Found {len(relevant_chunks)} relevant chunks from {total_chunks} total chunks")
