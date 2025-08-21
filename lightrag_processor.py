@@ -125,8 +125,8 @@ class LightRAGProcessor:
             return np.array(embeddings, dtype=np.float32)
         except Exception as e:
             logger.error(f"Error in embedding function: {e}")
-            # Return zero embeddings as fallback
-            return np.zeros((len(texts), 1536), dtype=np.float32)
+            # Return zero embeddings as fallback (3072 is the actual AiTunnel dimension)
+            return np.zeros((len(texts), 3072), dtype=np.float32)
     
     async def initialize_rag(self):
         """
@@ -142,7 +142,7 @@ class LightRAGProcessor:
                 working_dir=self.working_dir,
                 llm_model_func=self.llm_model_func,
                 embedding_func=EmbeddingFunc(
-                    embedding_dim=1536,  # AiTunnel text-embedding-3-large dimension
+                    embedding_dim=3072,  # AiTunnel text-embedding-3-large actual dimension
                     max_token_size=8192,
                     func=self.embedding_func,
                 ),
