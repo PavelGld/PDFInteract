@@ -142,6 +142,9 @@ class LightRAGProcessor:
         try:
             logger.info("Initializing LightRAG...")
             
+            # Create working directory if it doesn't exist
+            os.makedirs(self.working_dir, exist_ok=True)
+            
             self.rag = LightRAG(
                 working_dir=self.working_dir,
                 llm_model_func=self.llm_model_func,
@@ -151,8 +154,6 @@ class LightRAGProcessor:
                     func=self.embedding_func,
                 ),
             )
-            
-            # No additional initialization needed
             
             logger.info("LightRAG initialized successfully")
             return self.rag
@@ -171,16 +172,8 @@ class LightRAGProcessor:
             
             logger.info(f"Inserting document (length: {len(text)} chars) into knowledge graph...")
             
-            # Insert document with proper error handling
-            try:
-                await self.rag.ainsert(text)
-            except Exception as async_error:
-                logger.warning(f"Async insert failed: {async_error}, trying sync method")
-                try:
-                    self.rag.insert(text)
-                except Exception as sync_error:
-                    logger.error(f"Both async and sync insert failed: {sync_error}")
-                    raise sync_error
+            # Insert using sync method (more stable)
+            self.rag.insert(text)
             
             logger.info("Document inserted successfully into knowledge graph")
             return True
