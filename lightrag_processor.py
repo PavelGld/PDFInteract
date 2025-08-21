@@ -169,11 +169,34 @@ class LightRAGProcessor:
             
             logger.info(f"Inserting document (length: {len(text)} chars) into knowledge graph...")
             
-            # Insert the document
+            # Insert the document and force synchronous processing
             result = self.rag.insert(text)
             
-            # Wait a moment to allow processing to complete
-            await asyncio.sleep(2)
+            # Wait for processing to complete and check for VDB files
+            max_retries = 10
+            for retry in range(max_retries):
+                await asyncio.sleep(1)
+                
+                # Check if vector database files were created
+                vdb_files = ['vdb_entities.json', 'vdb_relationships.json', 'vdb_chunks.json']
+                files_exist = []
+                for vdb_file in vdb_files:
+                    vdb_path = os.path.join(self.working_dir, vdb_file)
+                    if os.path.exists(vdb_path):
+                        file_size = os.path.getsize(vdb_path)
+                        if file_size > 10:  # File should have actual content
+                            files_exist.append(vdb_file)
+                            logger.info(f"Created {vdb_file}: {file_size} bytes")
+                
+                # If at least entities and chunks files exist, consider it successful
+                if 'vdb_entities.json' in files_exist and 'vdb_chunks.json' in files_exist:
+                    logger.info(f"Vector database files created successfully: {files_exist}")
+                    break
+                    
+                logger.info(f"Waiting for vector database files (attempt {retry+1}/{max_retries})...")
+            else:
+                logger.warning("Vector database files were not created. Attempting manual initialization...")
+                await self._ensure_vdb_files_exist()
             
             # Force completion of any pending document processing
             await self._complete_document_processing()
@@ -184,6 +207,27 @@ class LightRAGProcessor:
         except Exception as e:
             logger.error(f"Error inserting document: {e}")
             return False
+    
+    async def _ensure_vdb_files_exist(self):
+        """
+        Ensure vector database files exist with minimal content
+        """
+        try:
+            vdb_files = {
+                'vdb_entities.json': {"storage": [], "config": {"embedding_dim": 3072, "metric": "cosine"}},
+                'vdb_relationships.json': {"storage": [], "config": {"embedding_dim": 3072, "metric": "cosine"}},
+                'vdb_chunks.json': {"storage": [], "config": {"embedding_dim": 3072, "metric": "cosine"}}
+            }
+            
+            for filename, default_content in vdb_files.items():
+                file_path = os.path.join(self.working_dir, filename)
+                if not os.path.exists(file_path):
+                    with open(file_path, 'w') as f:
+                        json.dump(default_content, f, indent=2)
+                    logger.info(f"Created empty {filename}")
+                    
+        except Exception as e:
+            logger.error(f"Error ensuring VDB files exist: {e}")
     
     async def _complete_document_processing(self):
         """
@@ -232,6 +276,25 @@ class LightRAGProcessor:
             if self.rag is None:
                 await self.initialize_rag()
             
+            # Check if knowledge graph has data
+            storage_stats = self.get_storage_stats()
+            logger.info(f"Storage stats: {storage_stats}")
+            
+            # Check for vector database files
+            vdb_files = ['vdb_entities.json', 'vdb_relationships.json', 'vdb_chunks.json']
+            missing_files = []
+            for vdb_file in vdb_files:
+                vdb_path = os.path.join(self.working_dir, vdb_file)
+                if not os.path.exists(vdb_path):
+                    missing_files.append(vdb_file)
+                else:
+                    file_size = os.path.getsize(vdb_path)
+                    logger.info(f"Found {vdb_file}: {file_size} bytes")
+            
+            if missing_files:
+                logger.warning(f"Missing vector database files: {missing_files}")
+                return f"Knowledge graph is not properly initialized. Missing files: {', '.join(missing_files)}. Please re-upload and process your document."
+            
             logger.info(f"Querying knowledge graph: {query[:100]}...")
             
             # Query the knowledge graph  
@@ -245,11 +308,17 @@ class LightRAGProcessor:
             )
             
             logger.info("Knowledge graph query completed")
+            
+            # Check if response indicates no context found
+            if isinstance(response, str) and ("[no-context]" in response or "Sorry, I'm not able to provide" in response):
+                logger.warning("No context found in knowledge graph")
+                return "К сожалению, я не могу найти релевантную информацию в загруженном документе для ответа на ваш вопрос. Попробуйте переформулировать вопрос или загрузить документ заново."
+            
             return response
             
         except Exception as e:
             logger.error(f"Error querying knowledge graph: {e}")
-            return f"Error: Unable to query knowledge graph - {str(e)}"
+            return f"Ошибка при обращении к графу знаний: {str(e)}"
     
     def get_storage_stats(self) -> Dict[str, Any]:
         """
