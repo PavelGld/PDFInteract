@@ -347,7 +347,7 @@ with st.sidebar:
                             
                             # Update session state
                             st.session_state.pdf_processed = True
-                            st.session_state.vector_store = vector_store
+                            # Note: vector_store is set above in appropriate if/else blocks
                             st.session_state.pdf_content = text_content
                             st.session_state.pdf_name = uploaded_file.name
                             st.session_state.pdf_base64 = pdf_base64
