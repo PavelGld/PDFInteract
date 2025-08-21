@@ -82,21 +82,24 @@ class LightRAGProcessor:
             # Add current prompt
             messages.append({"role": "user", "content": prompt})
             
-            # Use OpenRouter client's get_response method
-            if len(messages) > 1:
-                # Extract question and history
-                question = messages[-1]['content']
-                history = messages[:-1]  # All but the last message
-                context = system_prompt or ""
-            else:
-                question = prompt
-                history = []
-                context = system_prompt or ""
+            # Create a combined prompt with system context
+            combined_prompt = ""
+            if system_prompt:
+                combined_prompt += f"System: {system_prompt}\n\n"
+            
+            combined_prompt += f"User: {prompt}"
+            
+            # Use simple message format that works with OpenRouter
+            simple_messages = []
+            if history_messages:
+                simple_messages.extend(history_messages)
+            
+            simple_messages.append({"role": "user", "content": combined_prompt})
             
             response = self.openrouter_client.get_response(
-                messages=history,
-                question=question,
-                context=context,
+                messages=simple_messages[:-1],  # History
+                question=combined_prompt,        # Current question with context
+                context="",                      # Empty context since we embedded it in the question
                 model=self.model,
                 max_tokens=2000 if not keyword_extraction else 500,
                 temperature=0.1
@@ -113,13 +116,14 @@ class LightRAGProcessor:
         Embedding function that uses AiTunnel API
         """
         try:
-            # Create temporary vector store to use AiTunnel embeddings
-            vector_store = VectorStore(self.aitunnel_api_key)
-            embeddings = []
+            # Reuse existing vector store to avoid multiple API connections
+            if not hasattr(self, '_cached_vector_store'):
+                self._cached_vector_store = VectorStore(self.aitunnel_api_key)
             
+            embeddings = []
             # Create embeddings using the AiTunnel API
             for text in texts:
-                embedding = vector_store.embeddings_model.embed_query(text)
+                embedding = self._cached_vector_store.embeddings_model.embed_query(text)
                 embeddings.append(embedding)
             
             return np.array(embeddings, dtype=np.float32)
