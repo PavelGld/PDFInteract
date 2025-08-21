@@ -302,13 +302,12 @@ with st.sidebar:
                                             st.session_state.vector_store = None  # Clear traditional vector store
                                             st.success("✅ Knowledge graph built successfully!")
                                         else:
-                                            st.error("❌ Failed to build knowledge graph. Falling back to traditional RAG.")
-                                            st.session_state.rag_method = "Traditional Vector RAG"
-                                            st.rerun()
+                                            st.error("❌ Failed to build knowledge graph with LightRAG.")
+                                            st.error("LightRAG требует исправления библиотеки. Попробуйте позже.")
                                     except Exception as e:
-                                        st.error(f"❌ LightRAG error: {str(e)}. Falling back to traditional RAG.")
-                                        st.session_state.rag_method = "Traditional Vector RAG"
-                                        st.rerun()
+                                        st.error(f"❌ LightRAG error: {str(e)}")
+                                        st.error("Проблема с библиотекой LightRAG. Выберите Traditional Vector RAG для продолжения работы.")
+                                        st.session_state.lightrag_processor = None
                             
                             # Traditional vector RAG processing
                             if st.session_state.rag_method == "Traditional Vector RAG" or not LIGHTRAG_AVAILABLE:

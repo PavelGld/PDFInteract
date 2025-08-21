@@ -20,8 +20,8 @@ except ImportError:
 try:
     # Import LightRAG components
     from lightrag import LightRAG, QueryParam
-    from lightrag.utils import EmbeddingFunc
-    from lightrag.kg.shared_storage import initialize_pipeline_status
+    from lightrag.base import EmbeddingFunc
+    from lightrag.kg.neo4j_impl import NetworkXStorage  
     LIGHTRAG_AVAILABLE = True
 except ImportError as e:
     print(f"LightRAG not available: {e}")
@@ -152,9 +152,7 @@ class LightRAGProcessor:
                 ),
             )
             
-            # REQUIRED initialization calls
-            await self.rag.initialize_storages()
-            await initialize_pipeline_status()
+            # No additional initialization needed
             
             logger.info("LightRAG initialized successfully")
             return self.rag
@@ -173,8 +171,16 @@ class LightRAGProcessor:
             
             logger.info(f"Inserting document (length: {len(text)} chars) into knowledge graph...")
             
-            # Use synchronous insert method to avoid LightRAG async bugs
-            self.rag.insert(text)
+            # Insert document with proper error handling
+            try:
+                await self.rag.ainsert(text)
+            except Exception as async_error:
+                logger.warning(f"Async insert failed: {async_error}, trying sync method")
+                try:
+                    self.rag.insert(text)
+                except Exception as sync_error:
+                    logger.error(f"Both async and sync insert failed: {sync_error}")
+                    raise sync_error
             
             logger.info("Document inserted successfully into knowledge graph")
             return True
