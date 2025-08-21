@@ -15,7 +15,7 @@ import PyPDF2
 import re
 from typing import List, Dict, Any, Optional
 from io import BytesIO
-import fitz  # PyMuPDF
+import pymupdf as fitz  # PyMuPDF
 from PIL import Image
 import base64
 import io
