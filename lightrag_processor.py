@@ -58,7 +58,7 @@ class LightRAGProcessor:
         self, 
         prompt: str, 
         system_prompt: Optional[str] = None, 
-        history_messages: List[Dict] = None, 
+        history_messages: Optional[List[Dict]] = None, 
         keyword_extraction: bool = False, 
         **kwargs
     ) -> str:
@@ -66,7 +66,7 @@ class LightRAGProcessor:
         LLM function that uses OpenRouter API
         """
         if history_messages is None:
-            history_messages: List[Dict[str, str]] = []
+            history_messages = []
             
         try:
             # Build messages for OpenRouter
