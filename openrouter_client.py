@@ -84,7 +84,7 @@ class OpenRouterClient:
                 f"{self.base_url}/chat/completions",
                 headers=self.headers,
                 json=payload,
-                timeout=60
+                timeout=120  # Extended timeout for slow models
             )
             
             # Handle API errors

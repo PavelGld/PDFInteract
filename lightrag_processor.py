@@ -253,34 +253,25 @@ class LightRAGProcessor:
             
             logger.info(f"Querying knowledge graph with mode={mode}, top_k={top_k}")
             
-            # Add timeout to prevent hanging
-            try:
-                # Use asyncio.wait_for with timeout
-                response = await asyncio.wait_for(
-                    asyncio.to_thread(
-                        self.rag.query,
-                        query=query,
-                        param=QueryParam(
-                            mode=mode,
-                            top_k=top_k,
-                            response_type=response_type
-                        )
-                    ),
-                    timeout=60.0  # 60 second timeout
+            # Query the knowledge graph directly - let LightRAG handle its own timeouts
+            logger.info("Starting knowledge graph query...")
+            response = self.rag.query(
+                query=query,
+                param=QueryParam(
+                    mode=mode,
+                    top_k=top_k,
+                    response_type=response_type
                 )
-                
-                logger.info("Knowledge graph query completed successfully")
-                
-                # Check if response indicates no context found
-                if isinstance(response, str) and ("[no-context]" in response or "Sorry, I'm not able to provide" in response):
-                    logger.warning("No context found in knowledge graph")
-                    return "К сожалению, я не могу найти релевантную информацию в загруженном документе для ответа на ваш вопрос. Попробуйте переформулировать вопрос или загрузить документ заново."
-                
-                return response
-                
-            except asyncio.TimeoutError:
-                logger.error("Knowledge graph query timed out after 60 seconds")
-                return "Запрос к графу знаний превысил время ожидания. Попробуйте задать более простой вопрос или используйте традиционный RAG."
+            )
+            
+            logger.info("Knowledge graph query completed successfully")
+            
+            # Check if response indicates no context found
+            if isinstance(response, str) and ("[no-context]" in response or "Sorry, I'm not able to provide" in response):
+                logger.warning("No context found in knowledge graph")
+                return "К сожалению, я не могу найти релевантную информацию в загруженном документе для ответа на ваш вопрос. Попробуйте переформулировать вопрос или загрузить документ заново."
+            
+            return response
             
         except Exception as e:
             logger.error(f"Error querying knowledge graph: {e}")

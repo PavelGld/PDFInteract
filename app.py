@@ -472,7 +472,7 @@ if st.session_state.pdf_processed:
                         response = run_async_query(
                             st.session_state.lightrag_processor, 
                             prompt, 
-                            mode="hybrid", 
+                            mode="local",  # Changed from hybrid to local to avoid hanging 
                             top_k=5, 
                             response_type="comprehensive"
                         )
