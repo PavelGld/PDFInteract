@@ -342,7 +342,7 @@ class AiTunnelEmbeddings:
         # Обрабатываем тексты по одному с большими паузами для гарантированного избежания rate limit
         all_embeddings = []
         
-        print(f"Processing {len(texts)} texts with AiTunnel API (safe mode - 2 second delays)...")
+        print(f"Processing {len(texts)} texts with AiTunnel API (optimized - 1 second delays)...")
         
         for i, text in enumerate(texts):
             print(f"Processing text {i + 1}/{len(texts)} (remaining: {len(texts) - i - 1})")
@@ -361,10 +361,10 @@ class AiTunnelEmbeddings:
                 embedding = embeddings_response.data[0].embedding
                 all_embeddings.append(embedding)
                 
-                # Большая пауза между запросами (30 запросов в минуту максимум)
+                # Оптимизированная пауза для лимита 10 запросов за 10 секунд
                 if i + 1 < len(texts):
-                    print(f"Waiting 2 seconds before next request...")
-                    time.sleep(2.0)  # 2 секунды между запросами - очень консервативно
+                    print(f"Waiting 1 second before next request...")
+                    time.sleep(1.0)  # 1 секунда между запросами (10 запросов за 10 секунд)
                     
             except Exception as e:
                 print(f"Ошибка при создании эмбеддингов для батча {i//batch_size + 1}: {e}")

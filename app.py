@@ -93,30 +93,13 @@ topic_extractor = TopicExtractor(openrouter_client)
 with st.sidebar:
     st.header("📄 PDF Upload")
     
-    # File upload with alternative method
-    upload_method = st.radio(
-        "Выберите способ загрузки:",
-        ["Загрузка файла", "Альтернативный метод"],
-        help="Если загрузка файла не работает, используйте альтернативный метод"
+    # File upload
+    uploaded_file = st.file_uploader(
+        "Choose a PDF file",
+        type="pdf",
+        help="Upload a PDF file (max 50MB) to start chatting with it",
+        accept_multiple_files=False
     )
-    
-    uploaded_file = None
-    
-    if upload_method == "Загрузка файла":
-        uploaded_file = st.file_uploader(
-            "Choose a PDF file",
-            type="pdf",
-            help="Upload a PDF file (max 50MB) to start chatting with it",
-            accept_multiple_files=False
-        )
-    else:
-        st.info("⚠️ Альтернативный метод для диагностики проблем с загрузкой файлов")
-        st.text_area(
-            "Вставьте base64 содержимое PDF или другую диагностическую информацию:",
-            placeholder="Этот метод в разработке...",
-            height=100,
-            disabled=True
-        )
     
     st.divider()
     
@@ -273,7 +256,7 @@ with st.sidebar:
                             
                             # Show progress for vectorization
                             st.info(f"🔄 Creating vector embeddings for {len(chunks)} text chunks using AiTunnel API...")
-                            st.info("⏳ This process may take several minutes due to API rate limits (2 seconds between requests)")
+                            st.info("⏳ This process will take about 1 second per chunk (optimized for your API limits)")
                             
                             # Create progress bar
                             progress_bar = st.progress(0)
@@ -286,7 +269,7 @@ with st.sidebar:
                                 progress = current / total if total > 0 else 0
                                 progress_bar.progress(progress)
                                 remaining = total - current
-                                est_time_remaining = remaining * 2  # 2 seconds per chunk
+                                est_time_remaining = remaining * 1  # 1 second per chunk
                                 status_text.text(f"Processing {current}/{total} chunks... (~{est_time_remaining//60}m {est_time_remaining%60}s remaining)")
                             
                             # Pass progress callback to add_chunks
