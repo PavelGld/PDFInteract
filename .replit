@@ -20,10 +20,6 @@ author = "agent"
 task = "workflow.run"
 args = "PDF Chat App"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "streamlit_app"
-
 [[workflows.workflow]]
 name = "PDF Chat App"
 author = "agent"
@@ -32,14 +28,6 @@ author = "agent"
 task = "shell.exec"
 args = "streamlit run app.py --server.port 5000"
 waitForPort = 5000
-
-[[workflows.workflow]]
-name = "streamlit_app"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "uv add PyPDF2 sentence-transformers faiss-cpu requests numpy"
 
 [[ports]]
 localPort = 3000

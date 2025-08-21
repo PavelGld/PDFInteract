@@ -3,6 +3,12 @@ LightRAG processor for knowledge graph-based RAG using OpenRouter API
 """
 
 import os
+# Setup environment timeouts BEFORE any LightRAG imports
+os.environ["TIMEOUT"] = "600"
+os.environ["READ_TIMEOUT"] = "600"  
+os.environ["HTTPX_TIMEOUT"] = "600"
+os.environ["LLM_REQUEST_TIMEOUT"] = "600"
+
 import asyncio
 import logging
 import numpy as np
@@ -136,6 +142,15 @@ class LightRAGProcessor:
             raise RuntimeError("LightRAG is not available. Please install lightrag-hku package.")
         
         try:
+            # Apply timeout fixes before initialization
+            try:
+                from lightrag_timeout_fix import patch_lightrag_timeouts, setup_environment_timeouts
+                patch_lightrag_timeouts()
+                setup_environment_timeouts()
+                logger.info("Applied LightRAG timeout patches")
+            except ImportError:
+                logger.info("Timeout fix module not available, using environment variables only")
+            
             logger.info("Initializing LightRAG...")
             
             # Create working directory if it doesn't exist
@@ -211,7 +226,7 @@ class LightRAGProcessor:
     async def query_knowledge_graph(
         self, 
         query: str, 
-        mode: str = "naive",  # Use most stable mode
+        mode: str = "local",  # Back to local mode for better results
         top_k: int = 3,       # Reduced top_k 
         response_type: str = "single line"  # Simplified response
     ) -> str:
@@ -242,16 +257,25 @@ class LightRAGProcessor:
             try:
                 logger.info("Calling self.rag.query()...")
                 
-                # Force naive mode and disable rerank for stability
-                stable_params = QueryParam(
-                    mode="naive",  # Always use naive mode for stability
+                # Use requested mode with timeout debugging
+                debug_params = QueryParam(
+                    mode=mode,  # Use the requested mode
                     top_k=top_k,
                     response_type=response_type,
                     enable_rerank=False  # Disable rerank to avoid configuration issues
                 )
-                logger.info(f"Using stable params: {stable_params}")
+                logger.info(f"Using debug params: {debug_params}")
                 
-                response = self.rag.query(query=query, param=stable_params)
+                # Add timeout wrapper around the query
+                import time
+                start_time = time.time()
+                logger.info(f"Query started at {start_time}")
+                
+                response = self.rag.query(query=query, param=debug_params)
+                
+                end_time = time.time()
+                duration = end_time - start_time
+                logger.info(f"Query completed in {duration:.2f} seconds")
                 logger.info("rag.query() call returned successfully")
                 
             except Exception as query_exception:
