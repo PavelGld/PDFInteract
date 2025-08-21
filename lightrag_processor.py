@@ -58,7 +58,7 @@ class LightRAGProcessor:
         self, 
         prompt: str, 
         system_prompt: Optional[str] = None, 
-        history_messages: List[Dict] = None, 
+        history_messages: Optional[List[Dict]] = None, 
         keyword_extraction: bool = False, 
         **kwargs
     ) -> str:
@@ -66,7 +66,7 @@ class LightRAGProcessor:
         LLM function that uses OpenRouter API
         """
         if history_messages is None:
-            history_messages: List[Dict[str, str]] = []
+            history_messages = []
             
         try:
             # Build messages for OpenRouter
@@ -173,11 +173,8 @@ class LightRAGProcessor:
             
             logger.info(f"Inserting document (length: {len(text)} chars) into knowledge graph...")
             
-            # Insert the document
-            if document_id:
-                self.rag.insert(text)  # Using synchronous method for now
-            else:
-                self.rag.insert(text)
+            # Use synchronous insert method to avoid LightRAG async bugs
+            self.rag.insert(text)
             
             logger.info("Document inserted successfully into knowledge graph")
             return True
@@ -209,17 +206,12 @@ class LightRAGProcessor:
             logger.info(f"Querying knowledge graph: {query[:100]}...")
             
             # Query the knowledge graph  
-            response = self.rag.query(
-                query=query,
-                param=QueryParam(
-                    mode=mode,
-                    top_k=top_k,
-                    response_type=response_type
-                )
-            )
+            response = self.rag.query(query, param=QueryParam(mode="hybrid"))
             
             logger.info("Knowledge graph query completed")
-            return response
+            if hasattr(response, '__iter__') and not isinstance(response, str):
+                return '\n'.join(str(r) for r in response)
+            return str(response)
             
         except Exception as e:
             logger.error(f"Error querying knowledge graph: {e}")
