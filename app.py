@@ -254,8 +254,27 @@ with st.sidebar:
                                 st.error("⚠️ AiTunnel API key not found. Please set AITUNNEL_API_KEY environment variable.")
                                 st.stop()
                             
+                            # Show progress for vectorization
+                            st.info(f"🔄 Creating vector embeddings for {len(chunks)} text chunks using AiTunnel API...")
+                            st.info("⏳ This process may take several minutes due to API rate limits (2 seconds between requests)")
+                            
+                            # Create progress bar
+                            progress_bar = st.progress(0)
+                            status_text = st.empty()
+                            
                             vector_store = VectorStore(aitunnel_api_key)
+                            
+                            # Custom progress tracking during vectorization
+                            def update_progress(current, total):
+                                progress = current / total if total > 0 else 0
+                                progress_bar.progress(progress)
+                                status_text.text(f"Processing {current}/{total} chunks...")
+                            
                             vector_store.add_chunks(chunks)
+                            
+                            # Clear progress indicators
+                            progress_bar.empty()
+                            status_text.empty()
                             
                             # Store PDF as base64 for viewing
                             pdf_base64 = base64.b64encode(uploaded_file.getvalue()).decode()

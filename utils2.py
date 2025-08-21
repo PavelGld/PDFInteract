@@ -339,32 +339,28 @@ class AiTunnelEmbeddings:
         """
         import time
         
-        # Обрабатываем тексты по одному, чтобы избежать rate limit
-        batch_size = 1
+        # Обрабатываем тексты по одному с большими паузами для гарантированного избежания rate limit
         all_embeddings = []
         
-        print(f"Processing {len(texts)} texts with AiTunnel API...")
+        print(f"Processing {len(texts)} texts with AiTunnel API (safe mode - 2 second delays)...")
         
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
-            print(f"Processing batch {i//batch_size + 1}/{(len(texts) + batch_size - 1)//batch_size}")
+        for i, text in enumerate(texts):
+            print(f"Processing text {i + 1}/{len(texts)} (remaining: {len(texts) - i - 1})")
             
             try:
                 embeddings_response = self.client.embeddings.create(
-                    input=batch[0] if len(batch) == 1 else batch,
+                    input=text,  # Всегда отправляем один текст
                     model=self.model
                 )
                 
-                # Извлекаем векторы из ответа
-                if len(batch) == 1:
-                    batch_embeddings = [embeddings_response.data[0].embedding]
-                else:
-                    batch_embeddings = [data.embedding for data in embeddings_response.data]
-                all_embeddings.extend(batch_embeddings)
+                # Извлекаем вектор из ответа
+                embedding = embeddings_response.data[0].embedding
+                all_embeddings.append(embedding)
                 
-                # Увеличенная пауза между запросами для соблюдения rate limit
-                if i + batch_size < len(texts):
-                    time.sleep(1.2)  # 1.2 секунды между запросами (меньше 1 запроса в секунду)
+                # Большая пауза между запросами (30 запросов в минуту максимум)
+                if i + 1 < len(texts):
+                    print(f"Waiting 2 seconds before next request...")
+                    time.sleep(2.0)  # 2 секунды между запросами - очень консервативно
                     
             except Exception as e:
                 print(f"Ошибка при создании эмбеддингов для батча {i//batch_size + 1}: {e}")
