@@ -1,0 +1,137 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d11" for="edge" attr.name="created_at" attr.type="long" />
+  <key id="d10" for="edge" attr.name="file_path" attr.type="string" />
+  <key id="d9" for="edge" attr.name="source_id" attr.type="string" />
+  <key id="d8" for="edge" attr.name="keywords" attr.type="string" />
+  <key id="d7" for="edge" attr.name="description" attr.type="string" />
+  <key id="d6" for="edge" attr.name="weight" attr.type="double" />
+  <key id="d5" for="node" attr.name="created_at" attr.type="long" />
+  <key id="d4" for="node" attr.name="file_path" attr.type="string" />
+  <key id="d3" for="node" attr.name="source_id" attr.type="string" />
+  <key id="d2" for="node" attr.name="description" attr.type="string" />
+  <key id="d1" for="node" attr.name="entity_type" attr.type="string" />
+  <key id="d0" for="node" attr.name="entity_id" attr.type="string" />
+  <graph edgedefault="undirected">
+    <node id="П.А. Гладких">
+      <data key="d0">П.А. Гладких</data>
+      <data key="d1">person</data>
+      <data key="d2">P.A. Gladkikh is associated with the Perm National Research Polytechnic University in Perm, Russian Federation.</data>
+      <data key="d3">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1755808366</data>
+    </node>
+    <node id="Пермский национальный исследовательский политехнический университет">
+      <data key="d0">Пермский национальный исследовательский политехнический университет</data>
+      <data key="d1">organization</data>
+      <data key="d2">Perm National Research Polytechnic University is an educational institution located in Perm, Russian Federation.</data>
+      <data key="d3">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1755808366</data>
+    </node>
+    <node id="г. Пермь">
+      <data key="d0">г. Пермь</data>
+      <data key="d1">geo</data>
+      <data key="d2">Perm is a city in the Russian Federation.</data>
+      <data key="d3">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1755808366</data>
+    </node>
+    <node id="Тейлора – Бишопа – Хилла">
+      <data key="d0">Тейлора – Бишопа – Хилла</data>
+      <data key="d1">category</data>
+      <data key="d2">Taylor-Bishop-Hill models are a type of constitutive model used to describe physical mechanisms of irreversible structural changes.</data>
+      <data key="d3">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1755808366</data>
+    </node>
+    <node id="упругопластическая модель Линя">
+      <data key="d0">упругопластическая модель Линя</data>
+      <data key="d1">category</data>
+      <data key="d2">The Lin's elastoplastic model is a type of constitutive model mentioned in the context of Taylor-Bishop-Hill models.</data>
+      <data key="d3">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1755808366</data>
+    </node>
+    <node id="неопределенность выбора активных систем">
+      <data key="d0">неопределенность выбора активных систем</data>
+      <data key="d1">category</data>
+      <data key="d2">The uncertainty in the selection of active systems is a problem addressed in the context of Taylor-Bishop-Hill models.</data>
+      <data key="d3">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1755808366</data>
+    </node>
+    <node id="итерационный подход">
+      <data key="d0">итерационный подход</data>
+      <data key="d1">category</data>
+      <data key="d2">The iterative approach is a proposed method to eliminate uncertainty in the selection of active systems in Taylor-Bishop-Hill models.</data>
+      <data key="d3">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1755808366</data>
+    </node>
+    <node id="конститутивные модели">
+      <data key="d0">конститутивные модели</data>
+      <data key="d1">category</data>
+      <data key="d2">Constitutive models are mathematical models used to analyze changing meso- and microstructures in materials during processing.</data>
+      <data key="d3">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1755808366</data>
+    </node>
+    <node id="физические теории пластичности">
+      <data key="d0">физические теории пластичности</data>
+      <data key="d1">category</data>
+      <data key="d2">Physical theories of plasticity include various models such as rigid-plastic, elastoplastic, viscoelastic, viscoplastic, and elastoviscoplastic models.</data>
+      <data key="d3">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1755808382</data>
+    </node>
+    <edge source="П.А. Гладких" target="Пермский национальный исследовательский политехнический университет">
+      <data key="d6">9.0</data>
+      <data key="d7">P.A. Gladkikh is affiliated with the Perm National Research Polytechnic University.</data>
+      <data key="d8">academic affiliation,research</data>
+      <data key="d9">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1755808383</data>
+    </edge>
+    <edge source="Пермский национальный исследовательский политехнический университет" target="г. Пермь">
+      <data key="d6">8.0</data>
+      <data key="d7">The Perm National Research Polytechnic University is located in the city of Perm.</data>
+      <data key="d8">educational institution,location</data>
+      <data key="d9">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1755808391</data>
+    </edge>
+    <edge source="Тейлора – Бишопа – Хилла" target="упругопластическая модель Линя">
+      <data key="d6">7.0</data>
+      <data key="d7">The Taylor-Bishop-Hill models include the Lin's elastoplastic model as a type of constitutive model.</data>
+      <data key="d8">constitutive models,model classification</data>
+      <data key="d9">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1755808383</data>
+    </edge>
+    <edge source="неопределенность выбора активных систем" target="итерационный подход">
+      <data key="d6">8.0</data>
+      <data key="d7">The iterative approach is proposed to address the uncertainty in the selection of active systems.</data>
+      <data key="d8">methodological approach,problem-solving</data>
+      <data key="d9">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1755808383</data>
+    </edge>
+    <edge source="неопределенность выбора активных систем" target="конститутивные модели">
+      <data key="d6">6.0</data>
+      <data key="d7">Constitutive models are used to analyze the uncertainty in the selection of active systems.</data>
+      <data key="d8">model application,uncertainty analysis</data>
+      <data key="d9">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1755808391</data>
+    </edge>
+    <edge source="конститутивные модели" target="физические теории пластичности">
+      <data key="d6">7.0</data>
+      <data key="d7">Constitutive models include physical theories of plasticity as a type of model.</data>
+      <data key="d8">model classification,theoretical framework</data>
+      <data key="d9">chunk-613b65bba7116173ea697cdbf4a0b708</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1755808383</data>
+    </edge>
+  </graph>
+</graphml>

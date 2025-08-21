@@ -230,16 +230,30 @@ class LightRAGProcessor:
             
             logger.info(f"Querying knowledge graph with mode={mode}, top_k={top_k}")
             
-            # Query the knowledge graph directly - let LightRAG handle its own timeouts
+            # Query the knowledge graph with detailed logging
             logger.info("Starting knowledge graph query...")
-            response = self.rag.query(
-                query=query,
-                param=QueryParam(
-                    mode=mode,
-                    top_k=top_k,
-                    response_type=response_type
-                )
-            )
+            logger.info(f"Query: {query[:100]}...")
+            logger.info(f"Parameters: mode={mode}, top_k={top_k}, response_type={response_type}")
+            
+            # Log storage files before query
+            storage_files = os.listdir(self.working_dir)
+            logger.info(f"Storage files available: {storage_files}")
+            
+            try:
+                logger.info("Calling self.rag.query()...")
+                
+                # Try with even simpler parameters to avoid hanging
+                simple_params = QueryParam(mode="naive", top_k=1, response_type="single line")
+                logger.info(f"Using simplified params: {simple_params}")
+                
+                response = self.rag.query(query=query, param=simple_params)
+                logger.info("rag.query() call returned successfully")
+                
+            except Exception as query_exception:
+                logger.error(f"Query failed with exception: {query_exception}")
+                import traceback
+                logger.error(f"Full traceback: {traceback.format_exc()}")
+                raise
             
             logger.info("Knowledge graph query completed successfully")
             
