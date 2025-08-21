@@ -169,42 +169,19 @@ class LightRAGProcessor:
         Insert a document into the knowledge graph with error handling
         """
         try:
-            # Force clean initialization each time to avoid state issues
-            logger.info("Reinitializing LightRAG for document insertion...")
-            
-            # Clear problematic storage state
-            import shutil
-            if os.path.exists(self.working_dir):
-                shutil.rmtree(self.working_dir)
-                os.makedirs(self.working_dir, exist_ok=True)
-            
-            self.rag = None
-            await self.initialize_rag()
+            if self.rag is None:
+                await self.initialize_rag()
             
             logger.info(f"Inserting document (length: {len(text)} chars) into knowledge graph...")
             
-            # Try simple insertion with very small text chunks to avoid library bugs
-            if len(text) > 1500:
-                # Split into smaller chunks to avoid internal library errors
-                chunks = [text[i:i+1200] for i in range(0, len(text), 1200)]
-                logger.info(f"Splitting large document into {len(chunks)} chunks")
-                
-                for i, chunk in enumerate(chunks[:2]):  # Process only first 2 chunks to avoid errors
-                    try:
-                        logger.info(f"Processing chunk {i+1}: {len(chunk)} chars")
-                        self.rag.insert(chunk)
-                        await asyncio.sleep(1)  # Small delay between chunks
-                    except Exception as chunk_error:
-                        logger.error(f"Chunk {i+1} failed: {chunk_error}")
-                        continue
-            else:
-                # For small documents, try direct insertion
-                try:
-                    self.rag.insert(text)
-                    logger.info("Small document inserted successfully")
-                except Exception as small_error:
-                    logger.error(f"Small document insertion failed: {small_error}")
-                    return False
+            # Try direct insertion first
+            try:
+                logger.info("Attempting document insertion...")
+                self.rag.insert(text)
+                logger.info("Document inserted successfully")
+            except Exception as insert_error:
+                logger.error(f"Document insertion failed: {insert_error}")
+                return False
             
             # Wait for processing to complete
             await asyncio.sleep(5)
