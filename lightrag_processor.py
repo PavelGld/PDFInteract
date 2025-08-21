@@ -21,8 +21,8 @@ try:
     # Import LightRAG components
     from lightrag import LightRAG, QueryParam
     from lightrag.base import EmbeddingFunc
-    from lightrag.kg.neo4j_impl import NetworkXStorage  
     LIGHTRAG_AVAILABLE = True
+    print("LightRAG imported successfully")
 except ImportError as e:
     print(f"LightRAG not available: {e}")
     LIGHTRAG_AVAILABLE = False

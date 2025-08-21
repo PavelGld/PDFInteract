@@ -280,20 +280,25 @@ with st.sidebar:
                                 st.stop()
                             
                             # Process based on selected RAG method
-                            if st.session_state.rag_method == "Knowledge Graph RAG (LightRAG)" and LIGHTRAG_AVAILABLE:
+                            if st.session_state.rag_method == "Knowledge Graph RAG (LightRAG)":
+                                if not LIGHTRAG_AVAILABLE:
+                                    st.error("❌ LightRAG library is not available. Please check installation.")
+                                    st.error("Ошибка импорта библиотеки LightRAG. Выберите Traditional Vector RAG.")
+                                    st.stop()
+                                    
                                 st.info("🧠 Building knowledge graph with LightRAG...")
                                 st.info("⚠️ LightRAG requires powerful LLM for entity-relationship extraction. This may take longer and cost more.")
                                 
-                                # Create LightRAG processor
-                                lightrag_processor = create_lightrag_processor(
-                                    openrouter_api_key=api_key,
-                                    aitunnel_api_key=aitunnel_api_key,
-                                    model=st.session_state.selected_model
-                                )
-                                
-                                # Initialize and insert document
-                                with st.spinner("Initializing knowledge graph..."):
-                                    try:
+                                try:
+                                    # Create LightRAG processor
+                                    lightrag_processor = create_lightrag_processor(
+                                        openrouter_api_key=api_key,
+                                        aitunnel_api_key=aitunnel_api_key,
+                                        model=st.session_state.selected_model
+                                    )
+                                    
+                                    # Initialize and insert document
+                                    with st.spinner("Initializing knowledge graph..."):
                                         run_async_initialize(lightrag_processor)
                                         success = run_async_insert(lightrag_processor, text_content, uploaded_file.name)
                                         
@@ -303,11 +308,14 @@ with st.sidebar:
                                             st.success("✅ Knowledge graph built successfully!")
                                         else:
                                             st.error("❌ Failed to build knowledge graph with LightRAG.")
-                                            st.error("LightRAG требует исправления библиотеки. Попробуйте позже.")
-                                    except Exception as e:
-                                        st.error(f"❌ LightRAG error: {str(e)}")
-                                        st.error("Проблема с библиотекой LightRAG. Выберите Traditional Vector RAG для продолжения работы.")
-                                        st.session_state.lightrag_processor = None
+                                            st.error("Ошибка при создании графа знаний. Проверьте логи для деталей.")
+                                            st.stop()
+                                            
+                                except Exception as e:
+                                    st.error(f"❌ LightRAG initialization error:")
+                                    st.error(str(e))
+                                    st.error("Критическая ошибка LightRAG. Проблема в библиотеке или конфигурации.")
+                                    st.stop()
                             
                             # Traditional vector RAG processing
                             if st.session_state.rag_method == "Traditional Vector RAG" or not LIGHTRAG_AVAILABLE:
