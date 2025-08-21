@@ -26,6 +26,12 @@ class VectorStore:
         """
         self.aitunnel_api_key = os.environ.get("AITUNNEL_API_KEY", api_key)
         self.embeddings_model = AiTunnelEmbeddings(api_key=self.aitunnel_api_key)
+        
+        # Тест подключения к AiTunnel API
+        print("Testing AiTunnel API connection...")
+        if not self.embeddings_model.test_connection():
+            raise Exception("Failed to connect to AiTunnel API. Please check your API key.")
+            
         self.chunks = []
         self.embeddings = []
         self.vectorstore = None

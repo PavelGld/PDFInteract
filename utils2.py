@@ -304,11 +304,28 @@ class AiTunnelEmbeddings:
             api_key: AiTunnel API ключ (sk-aitunnel-xxx)
             model: Модель для эмбеддингов
         """
+        if not api_key or not api_key.startswith("sk-aitunnel-"):
+            raise ValueError(f"Invalid AiTunnel API key format. Expected: sk-aitunnel-xxx, got: {api_key[:20]}...")
+            
         self.client = OpenAI(
             api_key=api_key,
             base_url="https://api.aitunnel.ru/v1/"
         )
         self.model = model
+        print(f"Initialized AiTunnel client with model: {model}")
+        
+    def test_connection(self):
+        """Тест подключения к AiTunnel API"""
+        try:
+            test_response = self.client.embeddings.create(
+                input="test connection",
+                model=self.model
+            )
+            print("✓ AiTunnel API connection successful")
+            return True
+        except Exception as e:
+            print(f"✗ AiTunnel API connection failed: {e}")
+            return False
     
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """
@@ -322,44 +339,59 @@ class AiTunnelEmbeddings:
         """
         import time
         
-        # Обрабатываем тексты батчами по 5 штук, чтобы не превысить лимит
-        batch_size = 5
+        # Обрабатываем тексты по одному, чтобы избежать rate limit
+        batch_size = 1
         all_embeddings = []
+        
+        print(f"Processing {len(texts)} texts with AiTunnel API...")
         
         for i in range(0, len(texts), batch_size):
             batch = texts[i:i + batch_size]
+            print(f"Processing batch {i//batch_size + 1}/{(len(texts) + batch_size - 1)//batch_size}")
             
             try:
                 embeddings_response = self.client.embeddings.create(
-                    input=batch,
+                    input=batch[0] if len(batch) == 1 else batch,
                     model=self.model
                 )
                 
                 # Извлекаем векторы из ответа
-                batch_embeddings = [data.embedding for data in embeddings_response.data]
+                if len(batch) == 1:
+                    batch_embeddings = [embeddings_response.data[0].embedding]
+                else:
+                    batch_embeddings = [data.embedding for data in embeddings_response.data]
                 all_embeddings.extend(batch_embeddings)
                 
-                # Пауза между батчами для соблюдения rate limit (10 запросов в секунду)
+                # Увеличенная пауза между запросами для соблюдения rate limit
                 if i + batch_size < len(texts):
-                    time.sleep(0.6)  # 600ms пауза между батчами
+                    time.sleep(1.2)  # 1.2 секунды между запросами (меньше 1 запроса в секунду)
                     
             except Exception as e:
                 print(f"Ошибка при создании эмбеддингов для батча {i//batch_size + 1}: {e}")
+                print(f"Error type: {type(e).__name__}")
+                print(f"Using model: {self.model}")
+                
                 # Если 403 ошибка - увеличиваем паузу и повторяем
-                if "403" in str(e):
-                    print("Rate limit exceeded, увеличиваем паузу...")
-                    time.sleep(2.0)
+                if "403" in str(e) or "rate" in str(e).lower():
+                    print("Rate limit или authentication error detected, увеличиваем паузу...")
+                    time.sleep(3.0)
                     try:
+                        input_data = batch[0] if len(batch) == 1 else batch
                         embeddings_response = self.client.embeddings.create(
-                            input=batch,
+                            input=input_data,
                             model=self.model
                         )
-                        batch_embeddings = [data.embedding for data in embeddings_response.data]
+                        if len(batch) == 1:
+                            batch_embeddings = [embeddings_response.data[0].embedding]
+                        else:
+                            batch_embeddings = [data.embedding for data in embeddings_response.data]
                         all_embeddings.extend(batch_embeddings)
+                        print(f"Retry успешен для батча {i//batch_size + 1}")
                     except Exception as retry_e:
                         print(f"Повторная ошибка для батча {i//batch_size + 1}: {retry_e}")
                         raise retry_e
                 else:
+                    print(f"Неожиданная ошибка: {e}")
                     raise e
         
         return all_embeddings
