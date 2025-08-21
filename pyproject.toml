@@ -22,6 +22,8 @@ dependencies = [
     "numpy>=2.2.6",
     "pymupdf>=1.26.0",
     "pillow>=11.2.1",
+    "lightrag-hku",
+    "nest-asyncio",
 ]
 
 [[tool.uv.index]]

@@ -34,6 +34,14 @@ from openrouter_client import OpenRouterClient
 from topic_extractor import TopicExtractor
 from utils import validate_pdf_file, format_chat_message
 
+# Import LightRAG processor
+try:
+    from lightrag_processor import create_lightrag_processor, run_async_insert, run_async_query, run_async_initialize
+    LIGHTRAG_AVAILABLE = True
+except ImportError as e:
+    print(f"LightRAG not available: {e}")
+    LIGHTRAG_AVAILABLE = False
+
 # Page configuration
 st.set_page_config(
     page_title="PDF Chat Assistant",
@@ -53,6 +61,10 @@ if "pdf_content" not in st.session_state:
     st.session_state.pdf_content = ""
 if "pdf_name" not in st.session_state:
     st.session_state.pdf_name = ""
+if "lightrag_processor" not in st.session_state:
+    st.session_state.lightrag_processor = None
+if "rag_method" not in st.session_state:
+    st.session_state.rag_method = "Knowledge Graph RAG (LightRAG)"
 if "pdf_base64" not in st.session_state:
     st.session_state.pdf_base64 = ""
 if "selected_model" not in st.session_state:
@@ -100,6 +112,19 @@ with st.sidebar:
         help="Upload a PDF file (max 50MB) to start chatting with it",
         accept_multiple_files=False
     )
+    
+    st.divider()
+    
+    # RAG Method Selection
+    st.header("🧠 RAG Method")
+    rag_method = st.radio(
+        "Choose RAG approach:",
+        ["Traditional Vector RAG", "Knowledge Graph RAG (LightRAG)"],
+        index=1,
+        help="Traditional RAG uses vector similarity search. Knowledge Graph RAG builds entity-relationship graphs for better context understanding."
+    )
+    
+    st.session_state.rag_method = rag_method
     
     st.divider()
     
@@ -248,36 +273,74 @@ with st.sidebar:
                             # Generate document summary
                             summary = topic_extractor.generate_document_summary(text_content, topics)
                             
-                            # Create vector store with AiTunnel API
+                            # Get API keys
                             aitunnel_api_key = os.environ.get("AITUNNEL_API_KEY")
                             if not aitunnel_api_key:
                                 st.error("⚠️ AiTunnel API key not found. Please set AITUNNEL_API_KEY environment variable.")
                                 st.stop()
                             
-                            # Show progress for vectorization
-                            st.info(f"🔄 Creating vector embeddings for {len(chunks)} text chunks using AiTunnel API...")
-                            st.info("⏳ This process will take about 1 second per chunk (optimized for your API limits)")
+                            # Process based on selected RAG method
+                            if st.session_state.rag_method == "Knowledge Graph RAG (LightRAG)" and LIGHTRAG_AVAILABLE:
+                                st.info("🧠 Building knowledge graph with LightRAG...")
+                                st.info("⚠️ LightRAG requires powerful LLM for entity-relationship extraction. This may take longer and cost more.")
+                                
+                                # Create LightRAG processor
+                                lightrag_processor = create_lightrag_processor(
+                                    openrouter_api_key=api_key,
+                                    aitunnel_api_key=aitunnel_api_key,
+                                    model=st.session_state.selected_model
+                                )
+                                
+                                # Initialize and insert document
+                                with st.spinner("Initializing knowledge graph..."):
+                                    try:
+                                        run_async_initialize(lightrag_processor)
+                                        success = run_async_insert(lightrag_processor, text_content, uploaded_file.name)
+                                        
+                                        if success:
+                                            st.session_state.lightrag_processor = lightrag_processor
+                                            st.session_state.vector_store = None  # Clear traditional vector store
+                                            st.success("✅ Knowledge graph built successfully!")
+                                        else:
+                                            st.error("❌ Failed to build knowledge graph. Falling back to traditional RAG.")
+                                            st.session_state.rag_method = "Traditional Vector RAG"
+                                            st.rerun()
+                                    except Exception as e:
+                                        st.error(f"❌ LightRAG error: {str(e)}. Falling back to traditional RAG.")
+                                        st.session_state.rag_method = "Traditional Vector RAG"
+                                        st.rerun()
                             
-                            # Create progress bar
-                            progress_bar = st.progress(0)
-                            status_text = st.empty()
-                            
-                            vector_store = VectorStore(aitunnel_api_key)
-                            
-                            # Custom progress tracking during vectorization
-                            def update_progress(current, total):
-                                progress = current / total if total > 0 else 0
-                                progress_bar.progress(progress)
-                                remaining = total - current
-                                est_time_remaining = remaining * 1  # 1 second per chunk
-                                status_text.text(f"Processing {current}/{total} chunks... (~{est_time_remaining//60}m {est_time_remaining%60}s remaining)")
-                            
-                            # Pass progress callback to add_chunks
-                            vector_store.add_chunks(chunks, progress_callback=update_progress)
-                            
-                            # Clear progress indicators
-                            progress_bar.empty()
-                            status_text.empty()
+                            # Traditional vector RAG processing
+                            if st.session_state.rag_method == "Traditional Vector RAG" or not LIGHTRAG_AVAILABLE:
+                                if not LIGHTRAG_AVAILABLE:
+                                    st.warning("⚠️ LightRAG not available. Using traditional vector RAG.")
+                                
+                                st.info(f"🔄 Creating vector embeddings for {len(chunks)} text chunks using AiTunnel API...")
+                                st.info("⏳ This process will take about 1 second per chunk (optimized for your API limits)")
+                                
+                                # Create progress bar
+                                progress_bar = st.progress(0)
+                                status_text = st.empty()
+                                
+                                vector_store = VectorStore(aitunnel_api_key)
+                                
+                                # Custom progress tracking during vectorization
+                                def update_progress(current, total):
+                                    progress = current / total if total > 0 else 0
+                                    progress_bar.progress(progress)
+                                    remaining = total - current
+                                    est_time_remaining = remaining * 1  # 1 second per chunk
+                                    status_text.text(f"Processing {current}/{total} chunks... (~{est_time_remaining//60}m {est_time_remaining%60}s remaining)")
+                                
+                                # Pass progress callback to add_chunks
+                                vector_store.add_chunks(chunks, progress_callback=update_progress)
+                                
+                                # Clear progress indicators
+                                progress_bar.empty()
+                                status_text.empty()
+                                
+                                st.session_state.vector_store = vector_store
+                                st.session_state.lightrag_processor = None  # Clear LightRAG processor
                             
                             # Store PDF as base64 for viewing
                             pdf_base64 = base64.b64encode(uploaded_file.getvalue()).decode()
@@ -402,49 +465,62 @@ if st.session_state.pdf_processed:
         with st.chat_message("assistant"):
             with st.spinner("🤔 Thinking..."):
                 try:
-                    # Search for relevant chunks
-                    if st.session_state.vector_store is not None:
-                        relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.5)
-                    else:
-                        relevant_chunks = []
-                        st.error("Vector store not initialized")
-                    
-                    # Debug information - show only if debug mode is enabled
-                    if st.session_state.get('debug_mode', False) and st.session_state.vector_store is not None:
-                        stats = st.session_state.vector_store.get_stats()
-                        total_chunks = stats.get('total_chunks', 0)
-                        st.info(f"🔍 **Search Results:** Found {len(relevant_chunks)} relevant chunks from {total_chunks} total chunks")
-                        
-                        if relevant_chunks:
-                            with st.expander("📄 View Retrieved Context", expanded=False):
-                                for i, chunk in enumerate(relevant_chunks[:3]):  # Show top 3
-                                    st.write(f"**Chunk {i+1}** (Score: {chunk.get('score', 0):.3f})")
-                                    st.write(chunk.get('content', '')[:300] + "...")
-                                    st.divider()
-                    
-                    if relevant_chunks:
-                        # Combine contexts
-                        context = "\n\n".join([chunk['content'] for chunk in relevant_chunks])
-                        
-                        # Get response from OpenRouter
-                        response = openrouter_client.get_response(
-                            messages=st.session_state.messages[:-1],  # Exclude current message
-                            question=prompt,
-                            context=context,
-                            model=st.session_state.selected_model,
-                            max_tokens=1000,
-                            temperature=0.7
+                    # Choose processing method based on selected RAG
+                    if st.session_state.lightrag_processor is not None:
+                        # Use LightRAG knowledge graph query
+                        st.info("🧠 Querying knowledge graph...")
+                        response = run_async_query(
+                            st.session_state.lightrag_processor, 
+                            prompt, 
+                            mode="hybrid", 
+                            top_k=5, 
+                            response_type="comprehensive"
                         )
                         
-                        st.markdown(response)
+                        if st.session_state.get('debug_mode', False):
+                            storage_stats = st.session_state.lightrag_processor.get_storage_stats()
+                            st.info(f"🧠 **Knowledge Graph Stats:** {storage_stats.get('file_count', 0)} storage files")
                         
-                        # Add assistant response to chat history
-                        st.session_state.messages.append({"role": "assistant", "content": response})
-                    else:
-                        # No relevant context found
-                        response = "I couldn't find relevant information in the document to answer your question. Could you try rephrasing your question or ask about something more specific from the PDF content?"
                         st.markdown(response)
                         st.session_state.messages.append({"role": "assistant", "content": response})
+                        
+                    elif st.session_state.vector_store is not None:
+                        # Use traditional vector RAG
+                        relevant_chunks = st.session_state.vector_store.search(prompt, k=5, score_threshold=0.5)
+                        
+                        # Debug information - show only if debug mode is enabled
+                        if st.session_state.get('debug_mode', False):
+                            stats = st.session_state.vector_store.get_stats()
+                            total_chunks = stats.get('total_chunks', 0)
+                            st.info(f"🔍 **Search Results:** Found {len(relevant_chunks)} relevant chunks from {total_chunks} total chunks")
+                            
+                            if relevant_chunks:
+                                with st.expander("📄 View Retrieved Context", expanded=False):
+                                    for i, chunk in enumerate(relevant_chunks[:3]):  # Show top 3
+                                        st.write(f"**Chunk {i+1}** (Score: {chunk.get('score', 0):.3f})")
+                                        st.write(chunk.get('content', '')[:300] + "...")
+                                        st.divider()
+                        
+                        if relevant_chunks:
+                            # Combine contexts
+                            context = "\n\n".join([chunk['content'] for chunk in relevant_chunks])
+                            
+                            # Get response from OpenRouter
+                            response = openrouter_client.get_response(
+                                messages=st.session_state.messages[:-1],  # Exclude current message
+                                question=prompt,
+                                context=context,
+                                model=st.session_state.selected_model,
+                                max_tokens=1000,
+                                temperature=0.7
+                            )
+                            
+                            st.markdown(response)
+                            st.session_state.messages.append({"role": "assistant", "content": response})
+                        else:
+                            st.warning("No relevant content found in the document.")
+                    else:
+                        st.error("❌ No processing method available. Please re-upload the document.")
                         
                 except Exception as e:
                     error_msg = f"❌ Error generating response: {str(e)}"

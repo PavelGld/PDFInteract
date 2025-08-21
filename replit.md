@@ -1,12 +1,22 @@
 # Overview
 
-PDF Chat Assistant is a Streamlit-based web application that enables interactive conversations with PDF documents using RAG (Retrieval-Augmented Generation) technology. The application processes uploaded PDF files, creates vector embeddings for semantic search, and leverages multiple LLM models through OpenRouter API to provide contextual answers based on document content.
+PDF Chat Assistant is a Streamlit-based web application that enables interactive conversations with PDF documents using advanced RAG (Retrieval-Augmented Generation) technology. The application supports two RAG approaches:
 
-The system supports 13 different LLM models including GPT-4, Claude 3.5, Gemini Pro, Llama 3.1, and others, allowing users to choose their preferred AI model for document analysis and conversation.
+1. **Traditional Vector RAG**: Uses vector embeddings for semantic search with AiTunnel API
+2. **Knowledge Graph RAG (LightRAG)**: Advanced knowledge graph-based approach using entity-relationship extraction
+
+The system supports 13 different LLM models including GPT-4, Claude 3.5, Gemini Pro, Llama 3.1, and others, allowing users to choose their preferred AI model for document analysis and conversation. LightRAG provides more sophisticated contextual understanding through graph-based relationships between entities in the document.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Recent Changes (January 2025)
+- Integrated LightRAG knowledge graph-based RAG system as alternative to traditional vector RAG
+- Added RAG method selection in sidebar (Traditional Vector RAG vs Knowledge Graph RAG)
+- Implemented automatic fallback to traditional RAG if LightRAG fails
+- Optimized AiTunnel API rate limiting to 1 second intervals (10 requests per 10 seconds)
+- Removed non-functional alternative upload method from interface
 
 # System Architecture
 
@@ -17,8 +27,10 @@ Preferred communication style: Simple, everyday language.
 
 ## Backend Architecture
 - **PDF Processing Pipeline**: Uses PyPDF2 and PyMuPDF (fitz) for text extraction, with automatic text chunking and overlap management for optimal retrieval
-- **Vector Store System**: In-memory vector storage using scikit-learn for cosine similarity calculations, with AiTunnel API for embeddings generation
-- **RAG Implementation**: Retrieves relevant document chunks based on user queries and constructs contextual prompts for LLM models
+- **Dual RAG System**: 
+  - **Traditional Vector RAG**: In-memory vector storage using scikit-learn for cosine similarity calculations, with AiTunnel API for embeddings generation
+  - **LightRAG Knowledge Graph**: Entity-relationship extraction using LLM models to build knowledge graphs for superior contextual understanding
+- **RAG Implementation**: Supports both vector similarity search and knowledge graph traversal depending on selected method
 - **Topic Extraction**: Automated keyword and topic identification using frequency analysis and LLM-based content analysis
 
 ## Data Storage Solutions
@@ -43,7 +55,9 @@ Preferred communication style: Simple, everyday language.
 - **PyPDF2 & PyMuPDF**: PDF text extraction and processing
 - **scikit-learn**: Vector similarity calculations and machine learning utilities
 - **NumPy**: Numerical operations for vector computations
+- **LightRAG-HKU**: Knowledge graph-based RAG system for advanced entity-relationship processing
 - **LangChain**: Framework components for LLM integration and document processing
+- **nest-asyncio**: Asyncio event loop management for LightRAG integration
 
 ## Development Tools
 - **UV Package Manager**: Modern Python dependency management
