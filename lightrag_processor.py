@@ -60,6 +60,22 @@ class LightRAGProcessor:
         os.makedirs(self.working_dir, exist_ok=True)
 
         self.rag = None
+        self.last_llm_error = None
+
+    def test_connection(self) -> tuple:
+        """Test API connection before processing. Returns (success, error_message)."""
+        try:
+            response = self.openrouter_client.chat(
+                messages=[{"role": "user", "content": "Say OK"}],
+                model=self.model,
+                max_tokens=10,
+                temperature=0.0
+            )
+            if response:
+                return True, None
+            return False, "API returned empty response"
+        except Exception as e:
+            return False, str(e)
 
     async def llm_model_func(
         self,
@@ -72,29 +88,28 @@ class LightRAGProcessor:
         if history_messages is None:
             history_messages = []
 
+        messages = []
+
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+
+        for msg in history_messages:
+            messages.append(msg)
+
+        messages.append({"role": "user", "content": prompt})
+
         try:
-            messages = []
-
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-
-            for msg in history_messages:
-                messages.append(msg)
-
-            messages.append({"role": "user", "content": prompt})
-
             response = self.openrouter_client.chat(
                 messages=messages,
                 model=self.model,
                 max_tokens=2000 if not keyword_extraction else 500,
                 temperature=0.1
             )
-
             return response
-
         except Exception as e:
+            self.last_llm_error = str(e)
             logger.error(f"Error in LLM function: {e}")
-            return f"Error: {str(e)}"
+            raise
 
     async def embedding_func(self, texts: List[str]) -> np.ndarray:
         try:
@@ -218,14 +233,30 @@ class LightRAGProcessor:
                 )
 
                 start_time = time.time()
-                response = self.rag.query(query=query, param=debug_params)
+                
+                query_timeout = 120
+                try:
+                    response = asyncio.wait_for(
+                        asyncio.coroutine(lambda: self.rag.query(query=query, param=debug_params))(),
+                        timeout=query_timeout
+                    )
+                except (TypeError, AttributeError):
+                    response = self.rag.query(query=query, param=debug_params)
+                
                 duration = time.time() - start_time
                 logger.info(f"Query completed in {duration:.2f} seconds")
 
+            except asyncio.TimeoutError:
+                logger.error(f"Query timed out after {query_timeout} seconds")
+                if self.last_llm_error:
+                    return f"Запрос к графу знаний превысил время ожидания. Последняя ошибка LLM: {self.last_llm_error}"
+                return "Запрос к графу знаний превысил время ожидания. Попробуйте ещё раз или используйте Traditional Vector RAG."
             except Exception as query_exception:
                 logger.error(f"Query failed with exception: {query_exception}")
                 import traceback
                 logger.error(f"Full traceback: {traceback.format_exc()}")
+                if self.last_llm_error:
+                    return f"Ошибка при запросе к графу знаний. Ошибка LLM: {self.last_llm_error}"
                 raise
 
             if isinstance(response, str) and ("[no-context]" in response or "Sorry, I'm not able to provide" in response):

@@ -279,9 +279,6 @@ with st.sidebar:
                             summary = topic_extractor.generate_document_summary(text_content, topics)
 
                             if st.session_state.rag_method == "Knowledge Graph RAG (LightRAG)" and LIGHTRAG_AVAILABLE:
-                                st.info("🧠 Building knowledge graph with LightRAG...")
-                                st.info("⚠️ LightRAG requires powerful LLM for entity-relationship extraction. This may take longer and cost more.")
-
                                 lightrag_proc = create_lightrag_processor(
                                     api_key=api_key,
                                     base_url=base_url,
@@ -289,6 +286,15 @@ with st.sidebar:
                                     embeddings_base_url=st.session_state.embeddings_base_url,
                                     model=st.session_state.selected_model
                                 )
+
+                                st.info("🔗 Testing API connection...")
+                                conn_ok, conn_err = lightrag_proc.test_connection()
+                                if not conn_ok:
+                                    st.error(f"❌ API connection failed: {conn_err}")
+                                    st.error("Please check your API Key, Base URL, and Model settings in the sidebar.")
+                                    st.stop()
+
+                                st.info("🧠 Building knowledge graph with LightRAG...")
 
                                 with st.spinner("Initializing knowledge graph..."):
                                     try:
@@ -458,16 +464,22 @@ if st.session_state.pdf_processed and api_configured:
                 try:
                     if st.session_state.lightrag_processor is not None:
                         st.info("🧠 Querying knowledge graph...")
+                        proc = st.session_state.lightrag_processor
+                        proc.last_llm_error = None
+                        
                         response = run_async_query(
-                            st.session_state.lightrag_processor,
+                            proc,
                             prompt,
                             mode="local",
                             top_k=5,
                             response_type="comprehensive"
                         )
 
+                        if proc.last_llm_error:
+                            st.error(f"⚠️ LLM API error during query: {proc.last_llm_error}")
+
                         if st.session_state.get('debug_mode', False):
-                            storage_stats = st.session_state.lightrag_processor.get_storage_stats()
+                            storage_stats = proc.get_storage_stats()
                             st.info(f"🧠 **Knowledge Graph Stats:** {storage_stats.get('file_count', 0)} storage files")
 
                         st.markdown(response)
