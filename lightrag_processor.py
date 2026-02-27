@@ -18,7 +18,7 @@ import time
 try:
     import nest_asyncio
     nest_asyncio.apply()
-except ImportError:
+except (ImportError, ValueError):
     pass
 
 try:
