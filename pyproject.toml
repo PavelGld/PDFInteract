@@ -24,6 +24,7 @@ dependencies = [
     "pillow>=11.2.1",
     "lightrag-hku",
     "nest-asyncio",
+    "pyvis>=0.3.2",
 ]
 
 [[tool.uv.index]]

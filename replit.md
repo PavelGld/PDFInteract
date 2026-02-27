@@ -2,71 +2,77 @@
 
 PDF Chat Assistant is a Streamlit-based web application that enables interactive conversations with PDF documents using advanced RAG (Retrieval-Augmented Generation) technology. The application supports two RAG approaches:
 
-1. **Traditional Vector RAG**: Uses vector embeddings for semantic search with AiTunnel API
+1. **Traditional Vector RAG**: Uses vector embeddings for semantic search
 2. **Knowledge Graph RAG (LightRAG)**: Advanced knowledge graph-based approach using entity-relationship extraction
 
-The system supports 13 different LLM models including GPT-4, Claude 3.5, Gemini Pro, Llama 3.1, and others, allowing users to choose their preferred AI model for document analysis and conversation. LightRAG provides more sophisticated contextual understanding through graph-based relationships between entities in the document.
+Users provide their own API keys and base URLs for any OpenAI-compatible LLM service. The system supports 13 preset models plus a custom model input field, allowing users to use any model from their chosen provider.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (January 2025)
+## Recent Changes (February 2026)
+- **User-provided API credentials**: Removed environment variable dependency; users now enter API key and base URL directly in the sidebar
+- **Custom model support**: Added text input for custom model IDs alongside the 13 preset models
+- **Knowledge Graph visualization**: New tab showing interactive entity-relationship graph (pyvis + networkx) when using LightRAG mode
+- **Separate embeddings API config**: Embeddings API key and base URL configurable independently in a collapsible section
+
+## Previous Changes
 - Integrated LightRAG knowledge graph-based RAG system as alternative to traditional vector RAG
-- Added RAG method selection in sidebar (Traditional Vector RAG vs Knowledge Graph RAG)  
+- Added RAG method selection in sidebar (Traditional Vector RAG vs Knowledge Graph RAG)
 - Implemented automatic fallback to traditional RAG if LightRAG fails
-- Optimized AiTunnel API rate limiting to 1 second intervals (10 requests per 10 seconds)
-- Removed non-functional alternative upload method from interface
-- **FIXED**: Resolved LightRAG library bugs with document insertion by implementing clean state management and chunking strategy (January 21, 2025)
-- **WORKING**: LightRAG now successfully creates vector databases (entities, relationships, chunks) and processes documents correctly
+- Fixed LightRAG timeout issues (httpx monkey-patching for 600s timeouts)
+- Fixed storage folder being cleared on every document upload
 
 # System Architecture
 
 ## Frontend Architecture
-- **Streamlit Framework**: Web-based interface with drag-and-drop PDF upload, real-time chat interface, and model selection sidebar
-- **Session State Management**: Maintains conversation history, processed documents, and vector store instances across user interactions
-- **Component Structure**: Modular design with separate components for PDF processing, vector operations, and API interactions
+- **Streamlit Framework**: Web-based interface with sidebar for API config, PDF upload, model selection, and RAG method
+- **Three tabs**: Chat, PDF Viewer, Knowledge Graph (graph tab only visible in LightRAG mode)
+- **Session State Management**: Stores API credentials, conversation history, processed documents, and processor instances
 
 ## Backend Architecture
-- **PDF Processing Pipeline**: Uses PyPDF2 and PyMuPDF (fitz) for text extraction, with automatic text chunking and overlap management for optimal retrieval
-- **Dual RAG System**: 
-  - **Traditional Vector RAG**: In-memory vector storage using scikit-learn for cosine similarity calculations, with AiTunnel API for embeddings generation
-  - **LightRAG Knowledge Graph**: Entity-relationship extraction using LLM models to build knowledge graphs for superior contextual understanding
-- **RAG Implementation**: Supports both vector similarity search and knowledge graph traversal depending on selected method
-- **Topic Extraction**: Automated keyword and topic identification using frequency analysis and LLM-based content analysis
+- **PDF Processing Pipeline**: Uses PyPDF2 and PyMuPDF (fitz) for text extraction, with automatic text chunking
+- **Dual RAG System**:
+  - **Traditional Vector RAG**: In-memory vector storage using scikit-learn cosine similarity
+  - **LightRAG Knowledge Graph**: Entity-relationship extraction using LLM models
+- **OpenRouterClient**: Generic OpenAI-compatible API client accepting any base_url
+- **Graph Visualization**: graph_visualizer.py reads graphml from LightRAG storage and renders interactive graph via pyvis
+
+## Key Files
+- `app.py` - Main Streamlit application
+- `openrouter_client.py` - Generic OpenAI-compatible LLM client
+- `lightrag_processor.py` - LightRAG integration with user-provided credentials
+- `lightrag_timeout_fix.py` - httpx timeout patches for LightRAG v1.3.7+
+- `graph_visualizer.py` - Interactive knowledge graph visualization (pyvis + networkx)
+- `vector_store.py` - Traditional vector RAG storage
+- `topic_extractor.py` - Document topic/keyword extraction
+- `pdf_processor.py` - PDF text and image extraction
+- `utils.py` / `utils2.py` - Utility functions and AiTunnel embeddings client
 
 ## Data Storage Solutions
-- **In-Memory Storage**: Vector embeddings and document chunks stored in session state for single-session persistence
-- **Temporary File Handling**: PDF files processed through temporary storage with automatic cleanup
-- **No Persistent Database**: Current architecture operates without permanent data storage, suitable for stateless document analysis sessions
+- **In-Memory Storage**: Vector embeddings and document chunks stored in session state
+- **LightRAG Storage**: `./lightrag_storage/` directory contains graphml, vector DBs, and caches
+- **No Persistent Database**: Stateless document analysis sessions
 
-## Authentication and Authorization
-- **API Key Management**: Environment variable-based configuration for OpenRouter and AiTunnel API keys
-- **No User Authentication**: Application operates as a single-user tool without login requirements
-- **API Rate Limiting**: Handled at the external service level (OpenRouter/AiTunnel)
+## Authentication
+- **User-provided API keys**: Entered directly in the sidebar (API key, base URL, optional embeddings API)
+- **No environment variables required**: All credentials provided at runtime
+- **No user authentication**: Single-user tool
 
 # External Dependencies
 
 ## AI/ML Services
-- **OpenRouter API**: Primary LLM service providing access to 13 different models (GPT-4o, Claude 3.5 Sonnet, Gemini Pro 1.5, Llama 3.1, etc.)
-- **AiTunnel API**: Embeddings generation service for vector representations of document chunks
-- **Model Support**: OpenAI, Anthropic, Google, Meta, Mistral, and Qwen model families
+- Any OpenAI-compatible API (OpenRouter, OpenAI, etc.) for LLM inference
+- Embeddings API (AiTunnel or compatible) for vector representations
 
 ## Core Libraries
-- **Streamlit**: Web application framework for the user interface
-- **PyPDF2 & PyMuPDF**: PDF text extraction and processing
-- **scikit-learn**: Vector similarity calculations and machine learning utilities
-- **NumPy**: Numerical operations for vector computations
-- **LightRAG-HKU**: Knowledge graph-based RAG system for advanced entity-relationship processing
-- **LangChain**: Framework components for LLM integration and document processing
-- **nest-asyncio**: Asyncio event loop management for LightRAG integration
-
-## Development Tools
-- **UV Package Manager**: Modern Python dependency management
-- **Environment Configuration**: dotenv for API key management
-- **Type Hints**: Full typing support for better code maintainability
-
-## Optional Integrations
-- **Image Processing**: PIL for potential image extraction from PDFs
-- **ChromaDB/FAISS**: Alternative vector databases (installed but not actively used in current implementation)
-- **Export/Import**: JSON-based chat history persistence capabilities
+- **Streamlit**: Web application framework
+- **PyPDF2 & PyMuPDF**: PDF text extraction
+- **scikit-learn**: Vector similarity calculations
+- **NumPy**: Numerical operations
+- **LightRAG-HKU**: Knowledge graph-based RAG system
+- **networkx**: Graph data structure and graphml parsing
+- **pyvis**: Interactive graph visualization
+- **LangChain**: Framework components for LLM integration
+- **nest-asyncio**: Asyncio event loop management for LightRAG
