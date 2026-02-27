@@ -98,13 +98,20 @@ class LightRAGProcessor:
 
         messages.append({"role": "user", "content": prompt})
 
+        logger.info(f"[LLM CALL] keyword_extraction={keyword_extraction}, messages={len(messages)}, prompt_len={len(prompt)}")
+
         try:
-            response = self.openrouter_client.chat(
-                messages=messages,
-                model=self.model,
-                max_tokens=2000 if not keyword_extraction else 500,
-                temperature=0.1
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.openrouter_client.chat(
+                    messages=messages,
+                    model=self.model,
+                    max_tokens=2000 if not keyword_extraction else 500,
+                    temperature=0.1
+                )
             )
+            logger.info(f"[LLM CALL] Response received, length={len(response) if response else 0}")
             return response
         except Exception as e:
             self.last_llm_error = str(e)
@@ -112,7 +119,7 @@ class LightRAGProcessor:
             raise
 
     async def embedding_func(self, texts: List[str]) -> np.ndarray:
-        try:
+        def _do_embeddings():
             from openai import OpenAI
             client = OpenAI(
                 api_key=self.embeddings_api_key,
@@ -128,6 +135,13 @@ class LightRAGProcessor:
                 embeddings.append(resp.data[0].embedding)
 
             return np.array(embeddings, dtype=np.float32)
+
+        try:
+            logger.info(f"[EMBEDDING] Creating embeddings for {len(texts)} texts")
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(None, _do_embeddings)
+            logger.info(f"[EMBEDDING] Done, shape={result.shape}")
+            return result
         except Exception as e:
             logger.error(f"Error in embedding function: {e}")
             return np.zeros((len(texts), 3072), dtype=np.float32)
@@ -234,7 +248,7 @@ class LightRAGProcessor:
 
                 start_time = time.time()
                 
-                query_timeout = 120
+                query_timeout = 300
                 try:
                     response = await asyncio.wait_for(
                         self.rag.aquery(query=query, param=debug_params),
