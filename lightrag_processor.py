@@ -83,19 +83,8 @@ class LightRAGProcessor:
 
             messages.append({"role": "user", "content": prompt})
 
-            if len(messages) > 1:
-                question = messages[-1]['content']
-                history = messages[:-1]
-                context = system_prompt or ""
-            else:
-                question = prompt
-                history = []
-                context = system_prompt or ""
-
-            response = self.openrouter_client.get_response(
-                messages=history,
-                question=question,
-                context=context,
+            response = self.openrouter_client.chat(
+                messages=messages,
                 model=self.model,
                 max_tokens=2000 if not keyword_extraction else 500,
                 temperature=0.1

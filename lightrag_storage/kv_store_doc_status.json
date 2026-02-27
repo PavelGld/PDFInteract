@@ -15,5 +15,23 @@
       "processing_start_time": 1755808341,
       "processing_end_time": 1755808395
     }
+  },
+  "doc-e28cc9c0e056d1f13ec830064f41730b": {
+    "status": "processed",
+    "chunks_count": 2,
+    "chunks_list": [
+      "chunk-f1323abf50f75754c08753ba58a0405a",
+      "chunk-74573ee32065d7c5d2c2da5018b15b2d"
+    ],
+    "content_summary": "--- Page 1 ---\n\nГладких , П. А. Влияние выбора активных систем скольжения в двухуровневых упругопластических моделях типа Тейлора – Бишопа – Хилла на отклик поликристаллических материалов / П. А. Гладких , П. В. Трусов // Прикладная математика и вопр...",
+    "content_length": 4228,
+    "created_at": "2026-02-27T21:27:37.306000+00:00",
+    "updated_at": "2026-02-27T21:28:59.386107+00:00",
+    "file_path": "unknown_source",
+    "track_id": "insert_20260227_212737_7a667a6b",
+    "metadata": {
+      "processing_start_time": 1772227657,
+      "processing_end_time": 1772227739
+    }
   }
 }

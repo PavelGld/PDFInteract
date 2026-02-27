@@ -6,6 +6,7 @@ using networkx + pyvis, displayed inside a Streamlit tab.
 """
 
 import os
+import tempfile
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -98,11 +99,12 @@ def render_knowledge_graph():
     net = Network(
         height="600px",
         width="100%",
-        bgcolor="#0e1117",
+        bgcolor="#1a1a2e",
         font_color="white",
         directed=False,
         select_menu=False,
         filter_menu=False,
+        notebook=False,
     )
 
     net.barnes_hut(
@@ -172,16 +174,19 @@ def render_knowledge_graph():
     }
     """)
 
-    html_content = net.generate_html()
-    html_content = html_content.replace("'", "&#39;")
-
-    components.html(
-        f"""<iframe srcdoc="{html_content}" 
-             style="width: 100%; height: 620px; border: 1px solid #333; border-radius: 8px;"
-             sandbox="allow-scripts allow-same-origin">
-        </iframe>""",
-        height=640,
-    )
+    tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".html", mode="w", encoding="utf-8")
+    try:
+        net.save_graph(tmp_file.name)
+        with open(tmp_file.name, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        components.html(html_content, height=620, scrolling=False)
+    except Exception as e:
+        st.error(f"Error rendering graph: {e}")
+    finally:
+        try:
+            os.unlink(tmp_file.name)
+        except:
+            pass
 
     legend_items = []
     for etype in sorted(filter_type):

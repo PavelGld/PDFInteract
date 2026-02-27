@@ -85,6 +85,38 @@
       <data key="d4">unknown_source</data>
       <data key="d5">1755808382</data>
     </node>
+    <node id="лаборатория многоуровневого моделирования конструкционных и функциональных материалов">
+      <data key="d0">лаборатория многоуровневого моделирования конструкционных и функциональных материалов</data>
+      <data key="d1">organization</data>
+      <data key="d2">A laboratory focused on multi‑level modeling of structural and functional materials.</data>
+      <data key="d3">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772227730</data>
+    </node>
+    <node id="Трусов Петр Валентинович">
+      <data key="d0">Трусов Петр Валентинович</data>
+      <data key="d1">person</data>
+      <data key="d2">Doctor of physical and mathematical sciences, professor, and head of the department 'Математическое моделирование систем и процессов'.</data>
+      <data key="d3">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772227730</data>
+    </node>
+    <node id="Математическое моделирование систем и процессов">
+      <data key="d0">Математическое моделирование систем и процессов</data>
+      <data key="d1">organization</data>
+      <data key="d2">Department of Mathematical Modeling of Systems and Processes.</data>
+      <data key="d3">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772227730</data>
+    </node>
+    <node id="исследователь">
+      <data key="d0">исследователь</data>
+      <data key="d1">category</data>
+      <data key="d2">Researcher.</data>
+      <data key="d3">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772227730</data>
+    </node>
     <edge source="П.А. Гладких" target="Пермский национальный исследовательский политехнический университет">
       <data key="d6">9.0</data>
       <data key="d7">P.A. Gladkikh is affiliated with the Perm National Research Polytechnic University.</data>
@@ -132,6 +164,30 @@
       <data key="d9">chunk-613b65bba7116173ea697cdbf4a0b708</data>
       <data key="d10">unknown_source</data>
       <data key="d11">1755808383</data>
+    </edge>
+    <edge source="лаборатория многоуровневого моделирования конструкционных и функциональных материалов" target="исследователь">
+      <data key="d6">7.0</data>
+      <data key="d7">The researcher is associated with the laboratory 'лаборатория многоуровневого моделирования конструкционных и функциональных материалов'.</data>
+      <data key="d8">laboratory affiliation</data>
+      <data key="d9">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772227735</data>
+    </edge>
+    <edge source="Трусов Петр Валентинович" target="Математическое моделирование систем и процессов">
+      <data key="d6">9.0</data>
+      <data key="d7">Трусов Петр Валентинович serves as the head of the department 'Математическое моделирование систем и процессов'.</data>
+      <data key="d8">department head,leadership</data>
+      <data key="d9">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772227735</data>
+    </edge>
+    <edge source="Трусов Петр Валентинович" target="исследователь">
+      <data key="d6">8.0</data>
+      <data key="d7">Трусов Петр Валентинович holds the role of researcher.</data>
+      <data key="d8">researcher role</data>
+      <data key="d9">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772227737</data>
     </edge>
   </graph>
 </graphml>
