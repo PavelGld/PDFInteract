@@ -177,8 +177,8 @@ class LightRAGProcessor:
             logger.info(f"Inserting document (length: {len(text)} chars) into knowledge graph...")
 
             try:
-                logger.info("Attempting document insertion...")
-                self.rag.insert(text)
+                logger.info("Attempting document insertion (async)...")
+                await self.rag.ainsert(text)
                 logger.info("Document inserted successfully")
             except Exception as insert_error:
                 logger.error(f"Document insertion failed: {insert_error}")
@@ -236,12 +236,12 @@ class LightRAGProcessor:
                 
                 query_timeout = 120
                 try:
-                    response = asyncio.wait_for(
-                        asyncio.coroutine(lambda: self.rag.query(query=query, param=debug_params))(),
+                    response = await asyncio.wait_for(
+                        self.rag.aquery(query=query, param=debug_params),
                         timeout=query_timeout
                     )
-                except (TypeError, AttributeError):
-                    response = self.rag.query(query=query, param=debug_params)
+                except asyncio.TimeoutError:
+                    raise
                 
                 duration = time.time() - start_time
                 logger.info(f"Query completed in {duration:.2f} seconds")
