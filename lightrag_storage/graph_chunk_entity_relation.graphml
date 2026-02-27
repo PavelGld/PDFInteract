@@ -1,0 +1,361 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d11" for="edge" attr.name="created_at" attr.type="long" />
+  <key id="d10" for="edge" attr.name="file_path" attr.type="string" />
+  <key id="d9" for="edge" attr.name="source_id" attr.type="string" />
+  <key id="d8" for="edge" attr.name="keywords" attr.type="string" />
+  <key id="d7" for="edge" attr.name="description" attr.type="string" />
+  <key id="d6" for="edge" attr.name="weight" attr.type="double" />
+  <key id="d5" for="node" attr.name="created_at" attr.type="long" />
+  <key id="d4" for="node" attr.name="file_path" attr.type="string" />
+  <key id="d3" for="node" attr.name="source_id" attr.type="string" />
+  <key id="d2" for="node" attr.name="description" attr.type="string" />
+  <key id="d1" for="node" attr.name="entity_type" attr.type="string" />
+  <key id="d0" for="node" attr.name="entity_id" attr.type="string" />
+  <graph edgedefault="undirected">
+    <node id="П. А. Гладких">
+      <data key="d0">П. А. Гладких</data>
+      <data key="d1">person</data>
+      <data key="d2">П. А. Гладких is a researcher at the Laboratory of Multilevel Modeling of Structural and Functional Materials, Perm National Research Polytechnic University, and co-author of the study on the influence of active slip systems in elastic-plastic models.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229730</data>
+    </node>
+    <node id="П. В. Трусов">
+      <data key="d0">П. В. Трусов</data>
+      <data key="d1">person</data>
+      <data key="d2">П. В. Трусов is a Doctor of Physical and Mathematical Sciences, Professor, and Head of the Department of Mathematical Modeling of Systems and Processes at Perm National Research Polytechnic University, and co-author of the study.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229730</data>
+    </node>
+    <node id="Пермский национальный исследовательский политехнический университет">
+      <data key="d0">Пермский национальный исследовательский политехнический университет</data>
+      <data key="d1">organization</data>
+      <data key="d2">Perm National Research Polytechnic University is the institution where the authors are affiliated and where the research was conducted.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229730</data>
+    </node>
+    <node id="Прикладная математика и вопросы управления">
+      <data key="d0">Прикладная математика и вопросы управления</data>
+      <data key="d1">organization</data>
+      <data key="d2">Прикладная математика и вопросы управления is the journal where the research article was published.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229730</data>
+    </node>
+    <node id="Минобр России">
+      <data key="d0">Минобр России</data>
+      <data key="d1">organization</data>
+      <data key="d2">Минобр России is the financial supporter of the research under the state assignment.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229730</data>
+    </node>
+    <node id="модель Тейлора – Бишопа – Хилла">
+      <data key="d0">модель Тейлора – Бишопа – Хилла</data>
+      <data key="d1">category</data>
+      <data key="d2">The Taylor-Bishop-Hill model is a type of elastic-plastic model used in the study of polycrystalline materials.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229730</data>
+    </node>
+    <node id="упругопластическая модель Линя">
+      <data key="d0">упругопластическая модель Линя</data>
+      <data key="d1">category</data>
+      <data key="d2">The Lin elastic-plastic model is another type of model referenced in the study.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229730</data>
+    </node>
+    <node id="Пермь">
+      <data key="d0">Пермь</data>
+      <data key="d1">geo</data>
+      <data key="d2">Perm is the city where Perm National Research Polytechnic University is located.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229730</data>
+    </node>
+    <node id="Российская Федерация">
+      <data key="d0">Российская Федерация</data>
+      <data key="d1">geo</data>
+      <data key="d2">The Russian Federation is the country where the research was conducted.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229731</data>
+    </node>
+    <node id="лаборатория многоуровневого моделирования конструкционных и функциональных материалов">
+      <data key="d0">лаборатория многоуровневого моделирования конструкционных и функциональных материалов</data>
+      <data key="d1">organization</data>
+      <data key="d2">Description not available in text.&lt;SEP&gt;The Laboratory of Multilevel Modeling of Structural and Functional Materials is the research unit where П. А. Гладких works and where the study was conducted.</data>
+      <data key="d3">chunk-74573ee32065d7c5d2c2da5018b15b2d&lt;SEP&gt;chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229732</data>
+    </node>
+    <node id="кафедра «Математическое моделирование систем и процессов»">
+      <data key="d0">кафедра «Математическое моделирование систем и процессов»</data>
+      <data key="d1">organization</data>
+      <data key="d2">Description not available in text.&lt;SEP&gt;The Department of Mathematical Modeling of Systems and Processes is headed by П. В. Трусов at Perm National Research Polytechnic University.</data>
+      <data key="d3">chunk-74573ee32065d7c5d2c2da5018b15b2d&lt;SEP&gt;chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229732</data>
+    </node>
+    <node id="ГОСТ Р 7.0.100–2018">
+      <data key="d0">ГОСТ Р 7.0.100–2018</data>
+      <data key="d1">category</data>
+      <data key="d2">ГОСТ Р 7.0.100–2018 is the standard used for the bibliographic description of the article.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229732</data>
+    </node>
+    <node id="Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)">
+      <data key="d0">Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)</data>
+      <data key="d1">category</data>
+      <data key="d2">The license under which the article is made available.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229732</data>
+    </node>
+    <node id="FSNM-2021-0012">
+      <data key="d0">FSNM-2021-0012</data>
+      <data key="d1">category</data>
+      <data key="d2">The project number under which the research was funded by Минобр России.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229732</data>
+    </node>
+    <node id="физически-ориентированные модели типа Тейлора – Бишопа – Хилла">
+      <data key="d0">физически-ориентированные модели типа Тейлора – Бишопа – Хилла</data>
+      <data key="d1">category</data>
+      <data key="d2">Physically-oriented models of Taylor-Bishop-Hill type are a key focus of the research.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229732</data>
+    </node>
+    <node id="сложное нагружение">
+      <data key="d0">сложное нагружение</data>
+      <data key="d1">category</data>
+      <data key="d2">Complex loading is one of the key concepts mentioned in the research.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229732</data>
+    </node>
+    <node id="физические теории пластичности">
+      <data key="d0">физические теории пластичности</data>
+      <data key="d1">category</data>
+      <data key="d2">Physical theories of plasticity are referenced as part of the study's context.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229733</data>
+    </node>
+    <node id="конститутивные модели">
+      <data key="d0">конститутивные модели</data>
+      <data key="d1">category</data>
+      <data key="d2">Constitutive models are mentioned as a central element of mathematical modeling in the research.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229733</data>
+    </node>
+    <node id="определяющие соотношения">
+      <data key="d0">определяющие соотношения</data>
+      <data key="d1">category</data>
+      <data key="d2">Constitutive relations are described as a key component of mathematical models in the research.</data>
+      <data key="d3">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229733</data>
+    </node>
+    <node id="Трусов Петр Валентинович">
+      <data key="d0">Трусов Петр Валентинович</data>
+      <data key="d1">person</data>
+      <data key="d2">Трусов Петр Валентинович is a Doctor of Physical and Mathematical Sciences, a professor, and the head of the department 'Mathematical Modeling of Systems and Processes.'</data>
+      <data key="d3">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229733</data>
+    </node>
+    <node id="исследователь">
+      <data key="d0">исследователь</data>
+      <data key="d1">person</data>
+      <data key="d2">An unnamed researcher associated with the laboratory of multilevel modeling of structural and functional materials.</data>
+      <data key="d3">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229733</data>
+    </node>
+    <node id="e-mail: gladkikh.p@yandex.ru">
+      <data key="d0">e-mail: gladkikh.p@yandex.ru</data>
+      <data key="d1">category</data>
+      <data key="d2">Contact email address for the researcher.</data>
+      <data key="d3">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229733</data>
+    </node>
+    <node id="ORCID: 0000-0002-8196-6661">
+      <data key="d0">ORCID: 0000-0002-8196-6661</data>
+      <data key="d1">category</data>
+      <data key="d2">ORCID identifier for the researcher.</data>
+      <data key="d3">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229733</data>
+    </node>
+    <node id="доктор физико-математических наук">
+      <data key="d0">доктор физико-математических наук</data>
+      <data key="d1">category</data>
+      <data key="d2">Academic title held by Трусов Петр Валентинович.</data>
+      <data key="d3">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229734</data>
+    </node>
+    <node id="профессор">
+      <data key="d0">профессор</data>
+      <data key="d1">category</data>
+      <data key="d2">Academic rank held by Трусов Петр Валентинович.</data>
+      <data key="d3">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229734</data>
+    </node>
+    <node id="e-mail: tpv@matmod.pstu.ac.ru">
+      <data key="d0">e-mail: tpv@matmod.pstu.ac.ru</data>
+      <data key="d1">category</data>
+      <data key="d2">Contact email address for Трусов Петр Валентинович.</data>
+      <data key="d3">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229734</data>
+    </node>
+    <node id="ORCID: 0000-0001-8997-5493">
+      <data key="d0">ORCID: 0000-0001-8997-5493</data>
+      <data key="d1">category</data>
+      <data key="d2">ORCID identifier for Трусов Петр Валентинович.</data>
+      <data key="d3">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d4">unknown_source</data>
+      <data key="d5">1772229734</data>
+    </node>
+    <edge source="П. А. Гладких" target="Пермский национальный исследовательский политехнический университет">
+      <data key="d6">8.0</data>
+      <data key="d7">П. А. Гладких is affiliated with Perm National Research Polytechnic University as a researcher.</data>
+      <data key="d8">affiliation,research</data>
+      <data key="d9">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229776</data>
+    </edge>
+    <edge source="П. А. Гладких" target="П. В. Трусов">
+      <data key="d6">7.0</data>
+      <data key="d7">П. А. Гладких and П. В. Трусов are co-authors of the research article.</data>
+      <data key="d8">co-authorship,collaboration</data>
+      <data key="d9">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229781</data>
+    </edge>
+    <edge source="П. А. Гладких" target="Прикладная математика и вопросы управления">
+      <data key="d6">7.0</data>
+      <data key="d7">The journal published the research article co-authored by П. А. Гладких.</data>
+      <data key="d8">academic dissemination,publication</data>
+      <data key="d9">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229782</data>
+    </edge>
+    <edge source="П. А. Гладких" target="лаборатория многоуровневого моделирования конструкционных и функциональных материалов">
+      <data key="d6">8.0</data>
+      <data key="d7">П. А. Гладких works as a researcher in this laboratory.</data>
+      <data key="d8">employment,research affiliation</data>
+      <data key="d9">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229783</data>
+    </edge>
+    <edge source="П. В. Трусов" target="Пермский национальный исследовательский политехнический университет">
+      <data key="d6">9.0</data>
+      <data key="d7">П. В. Трусов is a professor and department head at Perm National Research Polytechnic University.</data>
+      <data key="d8">academic leadership,affiliation</data>
+      <data key="d9">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229778</data>
+    </edge>
+    <edge source="П. В. Трусов" target="Прикладная математика и вопросы управления">
+      <data key="d6">7.0</data>
+      <data key="d7">The journal published the research article co-authored by П. В. Трусов.</data>
+      <data key="d8">academic dissemination,publication</data>
+      <data key="d9">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229779</data>
+    </edge>
+    <edge source="П. В. Трусов" target="кафедра «Математическое моделирование систем и процессов»">
+      <data key="d6">9.0</data>
+      <data key="d7">П. В. Трусов heads this department at the university.</data>
+      <data key="d8">academic position,leadership</data>
+      <data key="d9">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229780</data>
+    </edge>
+    <edge source="Пермский национальный исследовательский политехнический университет" target="Минобр России">
+      <data key="d6">8.0</data>
+      <data key="d7">The university received financial support from Минобр России for the research.</data>
+      <data key="d8">funding,research support</data>
+      <data key="d9">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229779</data>
+    </edge>
+    <edge source="Прикладная математика и вопросы управления" target="Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)">
+      <data key="d6">7.0</data>
+      <data key="d7">The journal article is published under this license.</data>
+      <data key="d8">licensing,publication rights</data>
+      <data key="d9">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229778</data>
+    </edge>
+    <edge source="Минобр России" target="FSNM-2021-0012">
+      <data key="d6">8.0</data>
+      <data key="d7">The ministry provided funding for this specific project.</data>
+      <data key="d8">project support,research funding</data>
+      <data key="d9">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229781</data>
+    </edge>
+    <edge source="модель Тейлора – Бишопа – Хилла" target="физически-ориентированные модели типа Тейлора – Бишопа – Хилла">
+      <data key="d6">7.0</data>
+      <data key="d7">The model is a specific instance of physically-oriented models.</data>
+      <data key="d8">model classification,theoretical framework</data>
+      <data key="d9">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229779</data>
+    </edge>
+    <edge source="упругопластическая модель Линя" target="физические теории пластичности">
+      <data key="d6">7.0</data>
+      <data key="d7">The Lin model relates to physical theories of plasticity.</data>
+      <data key="d8">model classification,theoretical basis</data>
+      <data key="d9">chunk-f1323abf50f75754c08753ba58a0405a</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229780</data>
+    </edge>
+    <edge source="лаборатория многоуровневого моделирования конструкционных и функциональных материалов" target="исследователь">
+      <data key="d6">7.0</data>
+      <data key="d7">The researcher is associated with this laboratory.</data>
+      <data key="d8">affiliation,research</data>
+      <data key="d9">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229781</data>
+    </edge>
+    <edge source="кафедра «Математическое моделирование систем и процессов»" target="Трусов Петр Валентинович">
+      <data key="d6">8.0</data>
+      <data key="d7">Трусов Петр Валентинович is the head of the department 'Mathematical Modeling of Systems and Processes.'</data>
+      <data key="d8">academic role,leadership</data>
+      <data key="d9">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229781</data>
+    </edge>
+    <edge source="Трусов Петр Валентинович" target="доктор физико-математических наук">
+      <data key="d6">8.0</data>
+      <data key="d7">Трусов holds this academic title.</data>
+      <data key="d8">academic achievement</data>
+      <data key="d9">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229782</data>
+    </edge>
+    <edge source="Трусов Петр Валентинович" target="профессор">
+      <data key="d6">8.0</data>
+      <data key="d7">Трусов holds this academic rank.</data>
+      <data key="d8">academic position</data>
+      <data key="d9">chunk-74573ee32065d7c5d2c2da5018b15b2d</data>
+      <data key="d10">unknown_source</data>
+      <data key="d11">1772229783</data>
+    </edge>
+  </graph>
+</graphml>
