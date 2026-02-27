@@ -37,5 +37,31 @@
     "create_time": 1755809103,
     "update_time": 1755809103,
     "_id": "naive:query:f637eac3f73323cfff99982a5c091001"
+  },
+  "local:keywords:622433dc93342d9c9937be4c355a4186": {
+    "return": "{\"high_level_keywords\": [\"\\u043c\\u0430\\u0442\\u0435\\u043c\\u0430\\u0442\\u0438\\u0447\\u0435\\u0441\\u043a\\u0438\\u0435 \\u043c\\u043e\\u0434\\u0435\\u043b\\u0438\"], \"low_level_keywords\": [\"\\u043e\\u0441\\u043d\\u043e\\u0432\\u043d\\u043e\\u0439 \\u044d\\u043b\\u0435\\u043c\\u0435\\u043d\\u0442\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "embedding": null,
+    "embedding_shape": null,
+    "embedding_min": null,
+    "embedding_max": null,
+    "original_prompt": "какой элемент является основным для математических моделей?",
+    "create_time": 1755809703,
+    "update_time": 1755809703,
+    "_id": "local:keywords:622433dc93342d9c9937be4c355a4186"
+  },
+  "local:query:622433dc93342d9c9937be4c355a4186": {
+    "return": "Основным элементом математических моделей являются конститутивные модели. Они используются для анализа изменяющейся мезо- и микроструктуры материалов в процессе обработки. Конститутивные модели основаны на физических законах, что делает их более универсальными по сравнению с моделями других подходов. \n\n### References\n1. [DC] unknown_source",
+    "cache_type": "query",
+    "chunk_id": null,
+    "embedding": null,
+    "embedding_shape": null,
+    "embedding_min": null,
+    "embedding_max": null,
+    "original_prompt": "какой элемент является основным для математических моделей?",
+    "create_time": 1755809710,
+    "update_time": 1755809710,
+    "_id": "local:query:622433dc93342d9c9937be4c355a4186"
   }
 }
